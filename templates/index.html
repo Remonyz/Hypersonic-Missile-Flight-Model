@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hypersonic Glide Missile Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .results-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            min-height: 600px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        .flow-type-selector {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .simulate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .simulate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .simulate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #2a5298;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #2a5298;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .plots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .plot-container {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .plot-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            margin: 20px 0;
+        }
+
+        .success {
+            background: #efe;
+            color: #393;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #393;
+            margin: 20px 0;
+        }
+
+        .unit {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls-panel {
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .plots-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hypersonic Glide Missile Simulator</h1>
+        </div>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <form id="simulationForm">
+                    <div class="section">
+                        <h3>Initial Conditions</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="v0" class="tooltip" data-tooltip="Initial velocity of the glide vehicle">
+                                    Velocity <span class="unit">(km/s)</span>
+                                </label>
+                                <input type="number" id="v0" name="v0" value="6.5" step="0.1" min="1" max="15" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="t0" class="tooltip" data-tooltip="Time at start of glide phase">
+                                    Start Time <span class="unit">(s)</span>
+                                </label>
+                                <input type="number" id="t0" name="t0" value="0" step="1" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rolld0" class="tooltip" data-tooltip="Vehicle roll angle">
+                                    Roll Angle <span class="unit">(deg)</span>
+                                </label>
+                                <input type="number" id="rolld0" name="rolld0" value="0" step="1" min="-180" max="180" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="gammad0" class="tooltip" data-tooltip="Flight path angle (pitch)">
+                                    Pitch Angle <span class="unit">(deg)</span>
+                                </label>
+                                <input type="number" id="gammad0" name="gammad0" value="-10" step="0.5" min="-90" max="90" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="kappad0" class="tooltip" data-tooltip="Vehicle yaw angle">
+                                    Yaw Angle <span class="unit">(deg)</span>
+                                </label>
+                                <input type="number" id="kappad0" name="kappad0" value="0" step="1" min="-180" max="180" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="r0" class="tooltip" data-tooltip="Initial range distance">
+                                    Range Distance <span class="unit">(km)</span>
+                                </label>
+                                <input type="number" id="r0" name="r0" value="0" step="10" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cr0" class="tooltip" data-tooltip="Initial crossrange distance">
+                                    Crossrange Distance <span class="unit">(km)</span>
+                                </label>
+                                <input type="number" id="cr0" name="cr0" value="0" step="10" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Vehicle Parameters</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="payload" class="tooltip" data-tooltip="Total vehicle mass">
+                                    Mass <span class="unit">(kg)</span>
+                                </label>
+                                <input type="number" id="payload" name="payload" value="1000" step="10" min="100" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="beta" class="tooltip" data-tooltip="Ballistic coefficient">
+                                    Ballistic Coefficient <span class="unit">(lb/ft²)</span>
+                                </label>
+                                <input type="number" id="beta" name="beta" value="500" step="10" min="50" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="LtoD" class="tooltip" data-tooltip="Lift-to-drag ratio">
+                                    L/D Ratio
+                                </label>
+                                <input type="number" id="LtoD" name="LtoD" value="3.5" step="0.1" min="0.1" max="10" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="emis" class="tooltip" data-tooltip="Surface emissivity">
+                                    Emissivity
+                                </label>
+                                <input type="number" id="emis" name="emis" value="0.85" step="0.01" min="0.1" max="1" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Flow Type</h3>
+                        <div class="flow-type-selector">
+                            <div class="radio-group">
+                                <input type="radio" id="laminar" name="flow_type" value="laminar" checked>
+                                <label for="laminar">Laminar Flow</label>
+                            </div>
+                            <div class="radio-group">
+                                <input type="radio" id="turbulent" name="flow_type" value="turbulent">
+                                <label for="turbulent">Turbulent Flow</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Thermal Calculation Points</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="distance1" class="tooltip" data-tooltip="Distance from nose for temperature calc 1">
+                                    Distance 1 <span class="unit">(m)</span>
+                                </label>
+                                <input type="number" id="distance1" name="distance1" value="1.0" step="0.1" min="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="distance2" class="tooltip" data-tooltip="Distance from nose for temperature calc 2">
+                                    Distance 2 <span class="unit">(m)</span>
+                                </label>
+                                <input type="number" id="distance2" name="distance2" value="2.0" step="0.1" min="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Wavelength Bands</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lam1" class="tooltip" data-tooltip="Lower bound for wavelength band 1">
+                                    λ1 Lower <span class="unit">(μm)</span>
+                                </label>
+                                <input type="number" id="lam1" name="lam1" value="3.0" step="0.1" min="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lam2" class="tooltip" data-tooltip="Upper bound for wavelength band 1">
+                                    λ1 Upper <span class="unit">(μm)</span>
+                                </label>
+                                <input type="number" id="lam2" name="lam2" value="5.0" step="0.1" min="0.1" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lam3" class="tooltip" data-tooltip="Lower bound for wavelength band 2">
+                                    λ2 Lower <span class="unit">(μm)</span>
+                                </label>
+                                <input type="number" id="lam3" name="lam3" value="8.0" step="0.1" min="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lam4" class="tooltip" data-tooltip="Upper bound for wavelength band 2">
+                                    λ2 Upper <span class="unit">(μm)</span>
+                                </label>
+                                <input type="number" id="lam4" name="lam4" value="12.0" step="0.1" min="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="simulate-btn" id="simulateBtn">
+                        Run Simulation
+                    </button>
+                </form>
+            </div>
+
+            <div class="results-panel">
+                <div id="welcomeMessage">
+                    <h2>Welcome to the Hypersonic Glide Simulator</h2>
+                    <p>Configure your simulation parameters on the left and click "Run Simulation" to begin analysis.</p>
+                    <!-- <br>
+                    <p><strong>Features:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>6-DOF trajectory simulation</li>
+                        <li>Atmospheric density modeling</li>
+                        <li>Thermal analysis with IR emission</li>
+                        <li>Laminar and turbulent flow options</li>
+                        <li>Real-time visualization</li>
+                    </ul> -->
+                </div>
+
+                <div id="loadingMessage" class="loading">
+                    <div class="spinner"></div>
+                    <h3>Running Simulation...</h3>
+                    <p>This may take a few moments</p>
+                </div>
+
+                <div id="errorMessage" class="error" style="display: none;"></div>
+                <div id="successMessage" class="success" style="display: none;"></div>
+
+                <div id="resultsContainer" style="display: none;">
+                    <h2>Simulation Results</h2>
+                    <div class="plots-grid" id="plotsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('simulationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide previous results
+            document.getElementById('welcomeMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+            
+            // Show loading
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('simulateBtn').disabled = true;
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const params = Object.fromEntries(formData.entries());
+            
+            // Convert string values to numbers where needed
+            const numericFields = ['v0', 'rolld0', 'gammad0', 'kappad0', 'r0', 'cr0', 't0', 
+                                 'payload', 'beta', 'LtoD', 'emis', 'distance1', 'distance2', 
+                                 'lam1', 'lam2', 'lam3', 'lam4'];
+            
+            numericFields.forEach(field => {
+                if (params[field]) {
+                    params[field] = parseFloat(params[field]);
+                }
+            });
+            
+            try {
+                const response = await fetch('/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+                
+                // Hide loading
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('simulateBtn').disabled = false;
+                
+                if (data.success) {
+                    // Show success message
+                    document.getElementById('successMessage').textContent = 'Simulation completed successfully!';
+                    document.getElementById('successMessage').style.display = 'block';
+                    
+                    // Display results
+                    displayResults(data.results, data.plots);
+                } else {
+                    // Show error
+                    document.getElementById('errorMessage').textContent = `Simulation failed: ${data.error}`;
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+            } catch (error) {
+                // Hide loading
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('simulateBtn').disabled = false;
+                
+                // Show error
+                document.getElementById('errorMessage').textContent = `Network error: ${error.message}`;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        });
+        
+        function displayResults(results, plots) {
+            const plotsContainer = document.getElementById('plotsContainer');
+            plotsContainer.innerHTML = '';
+            
+            const plotTitles = {
+                'altitude_vs_range': 'Altitude vs Range',
+                'velocity_vs_range': 'Velocity vs Range',
+                'time_vs_range': 'Flight Time vs Range',
+                'crossrange_vs_range': 'Cross Range vs Range',
+                'T1_vs_range': 'Temperature 1 vs Range',
+                'T2_vs_range': 'Temperature 2 vs Range',
+                'IR_DSP_vs_range': 'DSP IR Intensity vs Range',        
+                'IR_SBIRS_vs_range': 'SBIRS IR Intensity vs Range'     
+            };
+
+            // Define the desired display order
+            const plotOrder = [
+                'altitude_vs_range',
+                'velocity_vs_range', 
+                'time_vs_range',
+                'crossrange_vs_range',
+                'T1_vs_range',
+                'T2_vs_range',
+                'IR_DSP_vs_range',      
+                'IR_SBIRS_vs_range'     
+            ];
+            
+            // Display plots in the specified order
+            plotOrder.forEach(plotName => {
+                if (plots[plotName]) {
+                    const plotData = plots[plotName];
+                    
+                    const plotContainer = document.createElement('div');
+                    plotContainer.className = 'plot-container';
+                    
+                    const title = document.createElement('h4');
+                    title.textContent = plotTitles[plotName] || plotName;
+                    title.style.marginBottom = '10px';
+                    title.style.color = '#2a5298';
+                    
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${plotData}`;
+                    img.alt = plotTitles[plotName] || plotName;
+                    
+                    plotContainer.appendChild(title);
+                    plotContainer.appendChild(img);
+                    plotsContainer.appendChild(plotContainer);
+                }
+            });
+            
+            document.getElementById('resultsContainer').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('resultsContainer').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+        
+        // Add input validation
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.min && parseFloat(this.value) < parseFloat(this.min)) {
+                    this.setCustomValidity(`Value must be at least ${this.min}`);
+                } else if (this.max && parseFloat(this.value) > parseFloat(this.max)) {
+                    this.setCustomValidity(`Value must be at most ${this.max}`);
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        });
+        
+        // Wavelength validation
+        function validateWavelengths() {
+            const lam1 = parseFloat(document.getElementById('lam1').value);
+            const lam2 = parseFloat(document.getElementById('lam2').value);
+            const lam3 = parseFloat(document.getElementById('lam3').value);
+            const lam4 = parseFloat(document.getElementById('lam4').value);
+            
+            if (lam1 >= lam2) {
+                document.getElementById('lam2').setCustomValidity('Upper bound must be greater than lower bound');
+            } else {
+                document.getElementById('lam2').setCustomValidity('');
+            }
+            
+            if (lam3 >= lam4) {
+                document.getElementById('lam4').setCustomValidity('Upper bound must be greater than lower bound');
+            } else {
+                document.getElementById('lam4').setCustomValidity('');
+            }
+        }
+        
+        ['lam1', 'lam2', 'lam3', 'lam4'].forEach(id => {
+            document.getElementById(id).addEventListener('input', validateWavelengths);
+        });
+    </script>
+</body>
+</html>
