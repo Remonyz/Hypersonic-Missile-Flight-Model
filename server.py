@@ -937,5 +937,8 @@ def generate_footprint_plot(footprint_data):
         print(f"Error generating footprint plot: {e}")
         return None
 
+import os
+
 if __name__ == '__main__':
-    app.run(debug=True)                                                                                     
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)                                                                                     
