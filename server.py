@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import numpy as np
 from scipy import integrate
+from scipy.spatial import ConvexHull
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
@@ -100,41 +101,242 @@ class HypersonicGlideSimulator:
         
         return h
     
-    def reynolds_number(self, rho, v, L):
-        """Calculate Reynolds number for boundary layer transition"""
-        # Dynamic viscosity calculation using Sutherland's law
-        # This is a simplified approach for hypersonic flow
-        T_ref = 273.15  # Reference temperature (K)
-        mu_ref = 1.716e-5  # Reference dynamic viscosity (Pa⋅s)
-        S = 110.4  # Sutherland constant (K)
+    def simulate_trajectory_only(self, params):
+        """Simplified simulation for footprint calculation - trajectory only"""
+        # Extract parameters
+        v0 = params['v0'] * 1000  # Convert km/s to m/s
+        rolld0 = params['rolld0']
+        gammad0 = params['gammad0']
+        kappad0 = params['kappad0']
+        r0 = params['r0'] * 1000  # Convert km to m
+        cr0 = params['cr0'] * 1000  # Convert km to m
+        t0 = params['t0']
+        payload = params['payload']
+        beta = params['beta']
+        LtoD = params['LtoD']
         
-        # Approximate temperature from altitude (simplified)
-        if rho > 0:
-            T = max(200, 288.15 - 0.0065 * (6370000 - self.Rearth))  # Rough approximation
-        else:
-            T = 200
+        # Unit conversions
+        betaMetric = beta * 47.9
+        betaog = betaMetric / 9.81
+        coeff = 1 / betaog
+        gamma0 = (gammad0 * np.pi) / 180
+        kappa0 = (kappad0 * np.pi) / 180
+        roll0 = (rolld0 * np.pi) / 180
         
-        # Sutherland's law for dynamic viscosity
-        mu = mu_ref * ((T / T_ref) ** 1.5) * ((T_ref + S) / (T + S))
+        # Initialize variables
+        t = t0
+        v = v0
+        gamma = gamma0
+        kappa = kappa0
+        roll = roll0
+        psi = r0 / self.Rearth
+        omega = cr0 / self.Rearth
+        pathlength = 0
         
-        # Reynolds number
-        Re = (rho * v * L) / mu
-        return Re
+        # Initial altitude calculation
+        h0 = -6970 * np.log(((9.81 - ((v ** 2)/self.Rearth)) * betaog * 2) / (1.46 * (v ** 2) * LtoD))
+        h = max(1000, h0)
+        h = self.eq_alt(v, h, LtoD, coeff)
+        
+        # Integration parameters
+        deltat = 0.1
+        tEND = 3600
+        maxrange = 20000 * 1000
+        dtprint = 5
+        
+        # Storage arrays
+        results = {
+            'time': [],
+            'altitude': [],
+            'velocity': [],
+            'range': [],
+            'crossrange': [],
+            'gamma_deg': [],
+            'kappa_deg': [],
+            'roll_switched': False  # Track if roll was switched
+        }
+        
+        # Main simulation loop
+        step_count = 0
+        max_steps = int(tEND / deltat)
+        tprint = dtprint
+        roll_switched = False
+        
+        while t <= tEND and psi * self.Rearth <= maxrange and h > 0 and step_count < max_steps:
+            step_count += 1
+            
+            rho = self.density(h)
+            
+            # Check if we should switch roll angle (when kappa reaches 90 degrees)
+            kappa_deg = kappa * 180 / np.pi
+            if not roll_switched and abs(kappa_deg) >= 90:
+                roll = 0.0  # Switch to zero roll for maximum crossrange
+                roll_switched = True
+            
+            # Store old values
+            psiold = psi
+            omegaold = omega
+            hold = h
+            gammaold = gamma
+            kappaold = kappa
+            vold = v
+            told = t
+            
+            # Trigonometric values
+            COSgo = np.cos(gammaold)
+            SINgo = np.sin(gammaold)
+            COSko = np.cos(kappaold)
+            SINko = np.sin(kappaold)
+            COSpo = np.cos(psiold)
+            TANpo = np.tan(psiold)
+            COSroll = np.cos(roll)
+            SINroll = np.sin(roll)
+            
+            R = self.Rearth + hold
+            muoverR2 = self.mu / (R ** 2)
+            
+            # Integration using midpoint method
+            psi_mid = psiold + ((vold * COSgo * COSko * deltat) / (2 * R))
+            omega_mid = omegaold + ((vold * COSgo * SINko * deltat) / (2 * R * COSpo))
+            h_mid = hold + ((vold * SINgo * deltat) / 2)
+            
+            dgamma = (vold * COSgo) / R
+            dgamma = dgamma - ((muoverR2 * COSgo) / vold)
+            dgamma = dgamma + (0.5 * LtoD * rho * vold * coeff * COSroll)
+            gamma_mid = gammaold + ((dgamma * deltat) / 2)
+            
+            dkappa = -(0.5 * LtoD * rho * vold * coeff * SINroll) / COSgo
+            dkappa = dkappa + ((vold * TANpo * COSgo * SINko) / R)
+            kappa_mid = kappaold + ((dkappa * deltat) / 2)
+            
+            dv = -(coeff * rho * (vold ** 2)) / 2
+            dv = dv - (SINgo * muoverR2)
+            v_mid = vold + ((dv * deltat) / 2)
+            
+            # Calculate values at t + deltat
+            COSg_mid = np.cos(gamma_mid)
+            SINg_mid = np.sin(gamma_mid)
+            COSk_mid = np.cos(kappa_mid)
+            SINk_mid = np.sin(kappa_mid)
+            COSp_mid = np.cos(psi_mid)
+            TANp_mid = np.tan(psi_mid)
+            
+            R_mid = self.Rearth + h_mid
+            muoverR2_mid = self.mu / (R_mid ** 2)
+            
+            t = told + deltat
+            psi = psiold + ((v_mid * COSg_mid * COSk_mid * deltat) / R_mid)
+            omega = omegaold + ((v_mid * COSg_mid * SINk_mid * deltat) / (R_mid * COSp_mid))
+            h = hold + (v_mid * SINg_mid * deltat)
+            
+            dgamma_mid = (v_mid * COSg_mid) / R_mid
+            dgamma_mid = dgamma_mid - ((muoverR2_mid * COSg_mid) / v_mid)
+            dgamma_mid = dgamma_mid + (0.5 * LtoD * rho * v_mid * coeff * COSroll)
+            gamma = gammaold + (dgamma_mid * deltat)
+            
+            dkappa_mid = -(0.5 * LtoD * rho * v_mid * coeff * SINroll) / COSg_mid
+            dkappa_mid = dkappa_mid + ((v_mid * TANp_mid * COSg_mid * SINk_mid) / R)
+            kappa = kappaold + (dkappa_mid * deltat)
+            
+            dv_mid = -((coeff * rho * (v_mid ** 2)) / 2)
+            dv_mid = dv_mid - (SINg_mid * muoverR2_mid)
+            v = vold + (dv_mid * deltat)
+            
+            pathlength = pathlength + v * deltat
+            
+            # Calculate range and crossrange
+            cosa = (np.sin(psi))**2 + np.cos(2*omega) * (np.cos(psi))**2
+            cosa = np.clip(cosa, -1.0, 1.0)
+            crange_earth = 0.5 * self.Rearth * np.arccos(cosa)
+            
+            sine = np.cos(omega) * np.cos(psi) / ((1+cosa)/2)**0.5
+            sine = np.clip(sine, -1.0, 1.0)
+            range_earth = (1.5708 - np.arcsin(sine)) * self.Rearth
+            
+            # Store results at print intervals
+            if (t + (deltat / 2)) >= tprint:
+                results['time'].append(t)
+                results['altitude'].append(h / 1000)  # Convert to km
+                results['velocity'].append(v / 1000)  # Convert to km/s
+                results['range'].append(range_earth / 1000)  # Convert to km
+                results['crossrange'].append(crange_earth / 1000)  # Convert to km
+                results['gamma_deg'].append(gamma * 180 / np.pi)
+                results['kappa_deg'].append(kappa * 180 / np.pi)
+                
+                tprint = tprint + dtprint
+        
+        results['roll_switched'] = roll_switched
+        return results
     
-    def ir_em_front(self, lam, x, h, c, k, em, len1, thetarad, phi1rad, phi2rad, Tw1):
-        """IR emission from front part of vehicle - exact from original code"""
+    def calculate_footprint(self, params):
+        """Calculate the footprint area by varying roll angle"""
+        # Roll angles to test (0 to 90 degrees)
+        roll_angles = np.linspace(0, 90, 19)  # 19 angles from 0 to 90
+        
+        all_trajectories = []
+        final_points = []
+        
+        for roll_angle in roll_angles:
+            # Set the roll angle for this trajectory
+            traj_params = params.copy()
+            traj_params['rolld0'] = roll_angle
+            
+            # Run trajectory simulation
+            try:
+                trajectory = self.simulate_trajectory_only(traj_params)
+                
+                if trajectory['range'] and trajectory['crossrange']:
+                    all_trajectories.append({
+                        'roll_angle': roll_angle,
+                        'range': trajectory['range'],
+                        'crossrange': trajectory['crossrange'],
+                        'roll_switched': trajectory['roll_switched']
+                    })
+                    
+                    # Store final point for footprint calculation
+                    final_range = trajectory['range'][-1]
+                    final_crossrange = trajectory['crossrange'][-1]
+                    final_points.append([final_range, final_crossrange])
+                    
+            except Exception as e:
+                print(f"Error with roll angle {roll_angle}: {e}")
+                continue
+        
+        if len(final_points) < 3:
+            raise ValueError("Not enough valid trajectories to calculate footprint")
+        
+        # Calculate footprint area using convex hull
+        final_points = np.array(final_points)
+        
+        # Create symmetric points (mirror across range axis for negative crossrange)
+        symmetric_points = final_points.copy()
+        symmetric_points[:, 1] = -symmetric_points[:, 1]  # Flip crossrange sign
+        
+        # Combine original and symmetric points
+        all_points = np.vstack([final_points, symmetric_points])
+        
+        # Calculate convex hull
         try:
-            return (2 * em * h * (c ** 2)) * (1 / (lam ** 5)) * (1 / (np.exp((h * c) / (lam * k * ((x / np.cos(phi1rad)) ** -0.05) * Tw1)) - 1)) * 2 * x * np.tan(thetarad)
-        except (OverflowError, ZeroDivisionError, ValueError):
-            return 0
-    
-    def ir_em_rear(self, lam, x, h, c, k, em, len1, thetarad, phi1rad, phi2rad, Tw2):
-        """IR emission from rear part of vehicle - exact from original code"""
-        try:
-            return (2 * em * h * (c ** 2)) * (1 / (lam ** 5)) * (1 / (np.exp((h * c) / (lam * k * (((len1 + ((x - len1) / np.cos(phi2rad))) / (3.5)) ** -0.05) * Tw2)) - 1)) * 2.2
-        except (OverflowError, ZeroDivisionError, ValueError):
-            return 0
-    
+            hull = ConvexHull(all_points)
+            footprint_area = hull.volume  # In 2D, volume gives area
+        except Exception as e:
+            # Fallback: approximate area using bounding box
+            min_range = np.min(all_points[:, 0])
+            max_range = np.max(all_points[:, 0])
+            min_crossrange = np.min(all_points[:, 1])
+            max_crossrange = np.max(all_points[:, 1])
+            footprint_area = (max_range - min_range) * (max_crossrange - min_crossrange) * 0.8  # 80% of bounding box
+            hull = None
+        
+        return {
+            'trajectories': all_trajectories,
+            'final_points': final_points.tolist(),
+            'symmetric_points': symmetric_points.tolist(),
+            'all_points': all_points.tolist(),
+            'footprint_area': footprint_area,
+            'hull': hull.vertices.tolist() if hull else None
+        }
+
     def simulate(self, params):
         """Main simulation function"""
         # Extract parameters
@@ -428,9 +630,48 @@ class HypersonicGlideSimulator:
         
         return results
 
-# Initialize simulator
-simulator = HypersonicGlideSimulator()
+    def reynolds_number(self, rho, v, L):
+        """Calculate Reynolds number for boundary layer transition"""
+        # Dynamic viscosity calculation using Sutherland's law
+        # This is a simplified approach for hypersonic flow
+        T_ref = 273.15  # Reference temperature (K)
+        mu_ref = 1.716e-5  # Reference dynamic viscosity (Pa⋅s)
+        S = 110.4  # Sutherland constant (K)
+        
+        # Approximate temperature from altitude (simplified)
+        if rho > 0:
+            T = max(200, 288.15 - 0.0065 * (6370000 - self.Rearth))  # Rough approximation
+        else:
+            T = 200
+        
+        # Sutherland's law for dynamic viscosity
+        mu = mu_ref * ((T / T_ref) ** 1.5) * ((T_ref + S) / (T + S))
+        
+        # Reynolds number
+        Re = (rho * v * L) / mu
+        return Re
+    # def reynolds_number(self, density, velocity, length):
+    #     """Calculate Reynolds number"""
+    #     # Dynamic viscosity approximation for air at high altitude
+    #     mu = 1.458e-6 * ((288.15) ** 1.5) / (288.15 + 110.4)  # Sutherland's law approximation
+    #     return (density * velocity * length) / mu
+    
+    # def planck_emission(self, T, lam1, lam2):
+    #     """Calculate Planck blackbody emission between wavelengths lam1 and lam2"""
+    #     # Numerical integration of Planck function
+    #     def planck_integrand(lam):
+    #         try:
+    #             return (2 * self.h_p * (self.c_l ** 2) / (lam ** 5)) / (np.exp((self.h_p * self.c_l) / (lam * self.k_b * T)) - 1)
+    #         except (OverflowError, ZeroDivisionError):
+    #             return 0
+        
+    #     try:
+    #         result, _ = integrate.quad(planck_integrand, lam1, lam2)
+    #         return result
+    #     except:
+    #         return 0
 
+# Flask routes
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -438,8 +679,11 @@ def index():
 @app.route('/simulate', methods=['POST'])
 def simulate():
     try:
-        params = request.json
-        results = simulator.simulate(params)
+        data = request.get_json()
+        simulator = HypersonicGlideSimulator()
+        
+        # Run simulation
+        results = simulator.simulate(data)
         
         # Generate plots
         plots = generate_plots(results)
@@ -449,6 +693,32 @@ def simulate():
             'results': results,
             'plots': plots
         })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/footprint', methods=['POST'])
+def calculate_footprint():
+    try:
+        data = request.get_json()
+        simulator = HypersonicGlideSimulator()
+        
+        # Run footprint calculation
+        footprint_data = simulator.calculate_footprint(data)
+        
+        # Generate footprint plot
+        footprint_plot = generate_footprint_plot(footprint_data)
+        
+        return jsonify({
+            'success': True,
+            'footprint_area': footprint_data['footprint_area'],
+            'plot': footprint_plot,
+            'trajectories_count': len(footprint_data['trajectories'])
+        })
+        
     except Exception as e:
         return jsonify({
             'success': False,
@@ -456,48 +726,216 @@ def simulate():
         })
 
 def generate_plots(results):
-    """Generate base64 encoded plots"""
+    """Generate all simulation plots"""
     plots = {}
     
-    # Set up matplotlib style
-    plt.style.use('default')
-    
-    plot_configs = [ 
-        ('altitude_vs_range', 'range', 'altitude', 'Range (km)', 'Altitude (km)', 'Altitude vs Range'),
-        ('velocity_vs_range', 'range', 'velocity', 'Range (km)', 'Velocity (km/s)', 'Velocity vs Range'),
-        ('time_vs_range', 'range', 'time', 'Range (km)', 'Time (s)', 'Flight Time vs Range'),
-        ('crossrange_vs_range', 'range', 'crossrange', 'Range (km)', 'Cross Range (km)', 'Cross Range vs Range'),
-        ('T1_vs_range', 'range', 'T1', 'Range (km)', 'Temperature at Distance 1 (K)', 'Temperature 1 vs Range'),
-        ('T2_vs_range', 'range', 'T2', 'Range (km)', 'Temperature at Distance 2 (K)', 'Temperature 2 vs Range'),
-        ('IR_DSP_vs_range', 'range', 'IR_DSP', 'Range (km)', 'DSP IR Intensity (kW/sr)', 'DSP IR Intensity vs Range'),
-        ('IR_SBIRS_vs_range', 'range', 'IR_SBIRS', 'Range (km)', 'SBIRS IR Intensity (kW/sr)', 'SBIRS IR Intensity vs Range'),
-    ]
-    
-    for plot_name, x_key, y_key, xlabel, ylabel, title in plot_configs:
-        fig, ax = plt.subplots(figsize=(10, 6))
+    try:
+        # Set up the plotting style
+        plt.style.use('default')
         
-        if results[x_key] and results[y_key]:
-            ax.plot(results[x_key], results[y_key], 'b-', linewidth=2)
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
-            ax.set_title(title)
-            ax.grid(True, alpha=0.3)
-            
-            # Save plot to base64 string
-            buffer = io.BytesIO()
-            plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
-            buffer.seek(0)
-            plot_data = buffer.getvalue()
-            buffer.close()
-            
-            plots[plot_name] = base64.b64encode(plot_data).decode()
+        # Plot 1: Altitude vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['altitude'], 'b-', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Altitude (km)', fontsize=12)
+        plt.title('Altitude vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
         
-        plt.close(fig)
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['altitude_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 2: Velocity vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['velocity'], 'r-', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Velocity (km/s)', fontsize=12)
+        plt.title('Velocity vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['velocity_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 3: Time vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['time'], 'g-', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Time (s)', fontsize=12)
+        plt.title('Flight Time vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['time_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 4: Crossrange vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['crossrange'], 'm-', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Crossrange (km)', fontsize=12)
+        plt.title('Cross Range vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['crossrange_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 5: Temperature 1 vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['T1'], 'orange', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Temperature (K)', fontsize=12)
+        plt.title('Temperature 1 vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['T1_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 6: Temperature 2 vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['T2'], 'brown', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Temperature (K)', fontsize=12)
+        plt.title('Temperature 2 vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['T2_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 7: IR DSP vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['IR_DSP'], 'purple', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('IR Intensity (W/m²)', fontsize=12)
+        plt.title('DSP IR Intensity vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['IR_DSP_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        # Plot 8: IR SBIRS vs Range
+        plt.figure(figsize=(10, 6))
+        plt.plot(results['range'], results['IR_SBIRS'], 'cyan', linewidth=2)
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('IR Intensity (W/m²)', fontsize=12)
+        plt.title('SBIRS IR Intensity vs Range', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plots['IR_SBIRS_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+    except Exception as e:
+        print(f"Error generating plots: {e}")
     
     return plots
 
-import os
+def generate_footprint_plot(footprint_data):
+    """Generate footprint visualization plot"""
+    try:
+        plt.figure(figsize=(12, 10))
+        
+        # Plot all trajectories
+        colors = plt.cm.viridis(np.linspace(0, 1, len(footprint_data['trajectories'])))
+        
+        for i, traj in enumerate(footprint_data['trajectories']):
+            label = f"Roll {traj['roll_angle']:.0f}°"
+            plt.plot(traj['range'], traj['crossrange'], 
+                    color=colors[i], linewidth=1.5, alpha=0.7, label=label)
+            
+            # Plot symmetric trajectory (negative crossrange)
+            plt.plot(traj['range'], [-cr for cr in traj['crossrange']], 
+                    color=colors[i], linewidth=1.5, alpha=0.7, linestyle='--')
+        
+        # Plot footprint boundary if convex hull was calculated
+        if footprint_data['hull'] and footprint_data['all_points']:
+            hull_points = np.array(footprint_data['all_points'])
+            hull_indices = footprint_data['hull']
+            
+            # Close the hull by adding the first point at the end
+            hull_indices.append(hull_indices[0])
+            
+            hull_x = [hull_points[i][0] for i in hull_indices]
+            hull_y = [hull_points[i][1] for i in hull_indices]
+            
+            plt.plot(hull_x, hull_y, 'r-', linewidth=3, alpha=0.8, label='Footprint Boundary')
+            plt.fill(hull_x, hull_y, 'red', alpha=0.1)
+        
+        # Mark final impact points
+        final_points = np.array(footprint_data['final_points'])
+        symmetric_points = np.array(footprint_data['symmetric_points'])
+        
+        plt.scatter(final_points[:, 0], final_points[:, 1], 
+                   c='red', s=50, marker='o', alpha=0.8, 
+                   label='Impact Points (+)')
+        plt.scatter(symmetric_points[:, 0], symmetric_points[:, 1], 
+                   c='red', s=50, marker='o', alpha=0.8, 
+                   label='Impact Points (-)')
+        
+        plt.xlabel('Range (km)', fontsize=12)
+        plt.ylabel('Crossrange (km)', fontsize=12)
+        plt.title(f'Glider Footprint Analysis\nFootprint Area: {footprint_data["footprint_area"]:.0f} km²', 
+                 fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.axis('equal')
+        
+        # Add legend with limited entries to avoid clutter
+        handles, labels = plt.gca().get_legend_handles_labels()
+        # Show only every 3rd roll angle plus boundary and impact points
+        legend_handles = []
+        legend_labels = []
+        
+        for i, (handle, label) in enumerate(zip(handles, labels)):
+            if 'Roll' in label and i % 3 == 0:
+                legend_handles.append(handle)
+                legend_labels.append(label)
+            elif 'Footprint' in label or 'Impact' in label:
+                legend_handles.append(handle)
+                legend_labels.append(label)
+        
+        plt.legend(legend_handles, legend_labels, loc='upper right', 
+                  bbox_to_anchor=(1.15, 1), fontsize=10)
+        plt.tight_layout()
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plot_data = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        return plot_data
+        
+    except Exception as e:
+        print(f"Error generating footprint plot: {e}")
+        return None
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True)                                                                                     
