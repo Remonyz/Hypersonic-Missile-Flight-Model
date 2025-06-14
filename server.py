@@ -358,7 +358,7 @@ class HypersonicGlideSimulator:
         lam3 = params['lam3'] * 1e-6
         lam4 = params['lam4'] * 1e-6
         
-        # Vehicle geometry (fixed for HTV-2 based on original code)
+        # Vehicle geometry
         noserad = 0.034
         phi1 = 11.3
         phi2 = 7.6
@@ -377,7 +377,7 @@ class HypersonicGlideSimulator:
         phi1rad = (phi1 * np.pi) / 180
         phi2rad = (phi2 * np.pi) / 180
         
-        # Heating coefficients - EXACT from original code
+        # Heating coefficients 
         Csp = 0.000183 / (noserad ** 0.5)           # for stagnation point
         
         Cphi1 = np.cos(phi1rad)
@@ -407,7 +407,7 @@ class HypersonicGlideSimulator:
         omega = cr0 / self.Rearth
         pathlength = 0
         
-        # Initial altitude calculation - EXACT from original
+        # Initial altitude calculation 
         h0 = -6970 * np.log(((9.81 - ((v ** 2)/self.Rearth)) * betaog * 2) / (1.46 * (v ** 2) * LtoD))
         h = max(1000, h0)  # Ensure reasonable starting altitude
         h = self.eq_alt(v, h, LtoD, coeff)
@@ -441,7 +441,7 @@ class HypersonicGlideSimulator:
             'boundary_layer': []  # Track laminar vs turbulent
         }
         
-        # Critical Reynolds number for transition (typical for hypersonic flow)
+        # Critical Reynolds number for transition
         Re_critical = 500000
         
         # Main simulation loop
@@ -476,7 +476,7 @@ class HypersonicGlideSimulator:
             R = self.Rearth + hold
             muoverR2 = self.mu / (R ** 2)
             
-            # Integration using midpoint method - EXACT from original
+            # Integration using midpoint method 
             psi_mid = psiold + ((vold * COSgo * COSko * deltat) / (2 * R))
             omega_mid = omegaold + ((vold * COSgo * SINko * deltat) / (2 * R * COSpo))
             h_mid = hold + ((vold * SINgo * deltat) / 2)
@@ -494,7 +494,7 @@ class HypersonicGlideSimulator:
             dv = dv - (SINgo * muoverR2)
             v_mid = vold + ((dv * deltat) / 2)
             
-            # Now use derivatives at the midpoint to calculate values at t + deltat
+            
             COSg_mid = np.cos(gamma_mid)
             SINg_mid = np.sin(gamma_mid)
             COSk_mid = np.cos(kappa_mid)
@@ -525,7 +525,7 @@ class HypersonicGlideSimulator:
             
             pathlength = pathlength + v * deltat
             
-            # Calculate range and crossrange - EXACT from original
+            # Calculate range and crossrange 
             cosa = (np.sin(psi))**2 + np.cos(2*omega) * (np.cos(psi))**2
             cosa = np.clip(cosa, -1.0, 1.0)
             crange_earth = 0.5 * self.Rearth * np.arccos(cosa)
@@ -544,7 +544,7 @@ class HypersonicGlideSimulator:
                 is_turbulent_1 = Re1 > Re_critical
                 is_turbulent_2 = Re2 > Re_critical
                 
-                # Calculate heating - EXACT from original Anderson equations
+                # Calculate heating 
                 enth0 = (0.5 * (v ** 2)) + 0.000023
                 
                 enthSP = 1000 * Tsp
@@ -650,26 +650,7 @@ class HypersonicGlideSimulator:
         # Reynolds number
         Re = (rho * v * L) / mu
         return Re
-    # def reynolds_number(self, density, velocity, length):
-    #     """Calculate Reynolds number"""
-    #     # Dynamic viscosity approximation for air at high altitude
-    #     mu = 1.458e-6 * ((288.15) ** 1.5) / (288.15 + 110.4)  # Sutherland's law approximation
-    #     return (density * velocity * length) / mu
-    
-    # def planck_emission(self, T, lam1, lam2):
-    #     """Calculate Planck blackbody emission between wavelengths lam1 and lam2"""
-    #     # Numerical integration of Planck function
-    #     def planck_integrand(lam):
-    #         try:
-    #             return (2 * self.h_p * (self.c_l ** 2) / (lam ** 5)) / (np.exp((self.h_p * self.c_l) / (lam * self.k_b * T)) - 1)
-    #         except (OverflowError, ZeroDivisionError):
-    #             return 0
-        
-    #     try:
-    #         result, _ = integrate.quad(planck_integrand, lam1, lam2)
-    #         return result
-    #     except:
-    #         return 0
+  
 
 # Flask routes
 @app.route('/')
@@ -703,27 +684,63 @@ def simulate():
 @app.route('/footprint', methods=['POST'])
 def calculate_footprint():
     try:
+        print("Footprint endpoint called")
         data = request.get_json()
+        print(f"Received footprint data: {data}")
+        
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data received'
+            }), 400
+        
         simulator = HypersonicGlideSimulator()
         
-        # Run footprint calculation
+        print("Starting footprint calculation...")
         footprint_data = simulator.calculate_footprint(data)
+        print(f"Footprint calculation completed. Area: {footprint_data['footprint_area']}")
         
-        # Generate footprint plot
+        print("Generating footprint plot...")
         footprint_plot = generate_footprint_plot(footprint_data)
+        print("Footprint plot generated successfully")
         
-        return jsonify({
+        
+        footprint_curves = {}
+        roll_angles = [-90, -45, 0, 45, 90]
+        
+        for roll_angle in roll_angles:
+        
+            if 'trajectories' in footprint_data:
+                trajectory = next((t for t in footprint_data['trajectories'] if t.get('roll_angle') == roll_angle), None)
+                if trajectory and 'range' in trajectory and 'crossrange' in trajectory:
+                    footprint_curves[roll_angle] = []
+                    for i in range(len(trajectory['range'])):
+                        footprint_curves[roll_angle].append({
+                            'range': trajectory['range'][i],
+                            'crossrange': trajectory['crossrange'][i]
+                        })
+        
+        response_data = {
             'success': True,
             'footprint_area': footprint_data['footprint_area'],
             'plot': footprint_plot,
-            'trajectories_count': len(footprint_data['trajectories'])
-        })
+            'trajectories_count': len(footprint_data['trajectories']),
+            'final_points': footprint_data['final_points'],
+            'hull_vertices': footprint_data['hull'] if footprint_data['hull'] else [],
+            'footprint_data': {  
+                'curves': footprint_curves
+            }
+        }
+        
+        print(f"Sending response with area: {footprint_data['footprint_area']}")
+        return jsonify(response_data)
         
     except Exception as e:
+        print(f"Error in footprint calculation: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
-        })
+        }), 500
 
 def generate_plots(results):
     """Generate all simulation plots"""
@@ -940,5 +957,5 @@ def generate_footprint_plot(footprint_data):
 import os
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5050))
     app.run(host='0.0.0.0', port=port, debug=True)                                                                                     

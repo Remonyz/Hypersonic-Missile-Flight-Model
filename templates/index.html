@@ -439,6 +439,138 @@
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(45deg, #764ba2, #667eea);
         }
+        /* Map section styling */
+        #map-section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        #map-container {
+            width: 100%;
+            height: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .control-group input {
+            padding: 8px 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 120px;
+        }
+
+        #projectFootprintBtn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #projectFootprintBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .direction-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            z-index: 1000;
+        }
+
+        /* Footprint legend */
+        .footprint-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Loading overlay for map */
+        .map-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            border-radius: 12px;
+        }
+
+        .map-loading p {
+            font-size: 16px;
+            font-weight: 500;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -644,12 +776,63 @@
             </div>
         </div>
 
+        <div id="map-section" style="display: none;">
+            <h2>Footprint Map Projection</h2>
+            
+            <div class="map-controls">
+                <div class="control-group">
+                    <label for="start-latitude">Start Latitude:</label>
+                    <input type="number" id="start-latitude" value="37.7749" step="0.0001" min="-90" max="90">
+                </div>
+                <div class="control-group">
+                    <label for="start-longitude">Start Longitude:</label>
+                    <input type="number" id="start-longitude" value="-122.4194" step="0.0001" min="-180" max="180">
+                </div>
+                <div class="control-group">
+                    <label for="flight-direction">Flight Direction (°):</label>
+                    <input type="number" id="flight-direction" value="45" step="1" min="0" max="359">
+                </div>
+                <button type="button" id="projectFootprintBtn">Project Footprint</button>
+            </div>
+            
+            <div id="map-container">
+                <div id="map"></div>
+                <div class="direction-indicator">
+                    Click on map to set start location, or use coordinates above
+                </div>
+                <div class="footprint-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff4444;"></div>
+                        <span>Roll +90° (Right Turn)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #44ff44;"></div>
+                        <span>Roll 0° (Straight)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4444ff;"></div>
+                        <span>Roll -90° (Left Turn)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffaa00;"></div>
+                        <span>Roll ±45°</span>
+                    </div>
+                </div>
+                <div id="map-loading" class="map-loading" style="display: none;">
+                    <p>Projecting footprint onto map...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Error Messages -->
         <div id="error-section" style="display: none;">
             <h3>Error</h3>
             <div id="error-message"></div>
         </div>
     </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
     <script>
         // Default parameters
@@ -675,6 +858,11 @@
 
         // Global variables to store results
         let currentResults = null;
+        let map = null;
+        let startMarker = null;
+        let directionArrow = null;
+        let footprintLayers = [];
+        let currentFootprintData = null;
 
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
@@ -1029,6 +1217,333 @@
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         }
+
+        // Initialize the map
+        function initializeMap() {
+            if (map) {
+                map.remove();
+            }
+            
+            map = L.map('map').setView([37.7749, -122.4194], 8);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+            
+            // Add click handler for setting start location
+            map.on('click', function(e) {
+                setStartLocation(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        // Set start location on map
+        function setStartLocation(lat, lng) {
+            // Update input fields
+            document.getElementById('start-latitude').value = lat.toFixed(6);
+            document.getElementById('start-longitude').value = lng.toFixed(6);
+            
+            // Remove existing marker
+            if (startMarker) {
+                map.removeLayer(startMarker);
+            }
+            
+            // Add new marker
+            startMarker = L.marker([lat, lng], {
+                draggable: true,
+                title: 'Start Location'
+            }).addTo(map);
+            
+            // Handle marker drag
+            startMarker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                setStartLocation(position.lat, position.lng);
+            });
+            
+            updateDirectionArrow();
+        }
+
+        // Update direction arrow
+        function updateDirectionArrow() {
+            if (!startMarker) return;
+            
+            const startPos = startMarker.getLatLng();
+            const direction = parseFloat(document.getElementById('flight-direction').value);
+            
+            // Calculate end point for arrow (50km ahead)
+            const endPos = calculateDestination(startPos.lat, startPos.lng, direction, 50);
+            
+            // Remove existing arrow
+            if (directionArrow) {
+                map.removeLayer(directionArrow);
+            }
+            
+            // Create direction arrow
+            directionArrow = L.polyline([
+                [startPos.lat, startPos.lng],
+                [endPos.lat, endPos.lng]
+            ], {
+                color: '#667eea',
+                weight: 4,
+                opacity: 0.8
+            }).addTo(map);
+            
+            // Add arrowhead
+            const arrowHead = L.marker([endPos.lat, endPos.lng], {
+                icon: L.divIcon({
+                    html: '➤',
+                    iconSize: [20, 20],
+                    className: 'arrow-icon',
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+            
+            // Group arrow components
+            directionArrow.arrowHead = arrowHead;
+        }
+
+        // Calculate destination point given start point, bearing and distance
+        function calculateDestination(lat1, lon1, bearing, distance) {
+            const R = 6371; // Earth's radius in km
+            const φ1 = lat1 * Math.PI / 180;
+            const λ1 = lon1 * Math.PI / 180;
+            const θ = bearing * Math.PI / 180;
+            
+            const φ2 = Math.asin(Math.sin(φ1) * Math.cos(distance / R) +
+                                Math.cos(φ1) * Math.sin(distance / R) * Math.cos(θ));
+            
+            const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(distance / R) * Math.cos(φ1),
+                                    Math.cos(distance / R) - Math.sin(φ1) * Math.sin(φ2));
+            
+            return {
+                lat: φ2 * 180 / Math.PI,
+                lng: λ2 * 180 / Math.PI
+            };
+        }
+
+        // Calculate bearing between two points
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            
+            const θ = Math.atan2(y, x);
+            return (θ * 180 / Math.PI + 360) % 360;
+        }
+
+        // Project footprint onto map
+        async function projectFootprintOnMap() {
+            if (!currentFootprintData) {
+                alert('Please calculate footprint first before projecting on map.');
+                return;
+            }
+            
+            const startLat = parseFloat(document.getElementById('start-latitude').value);
+            const startLng = parseFloat(document.getElementById('start-longitude').value);
+            const flightDirection = parseFloat(document.getElementById('flight-direction').value);
+            
+            if (isNaN(startLat) || isNaN(startLng) || isNaN(flightDirection)) {
+                alert('Please enter valid coordinates and flight direction.');
+                return;
+            }
+            
+            document.getElementById('map-loading').style.display = 'flex';
+            
+            try {
+                // Clear existing footprint layers
+                footprintLayers.forEach(layer => map.removeLayer(layer));
+                footprintLayers = [];
+                
+                // Project each footprint curve
+                const rollAngles = [-90, -45, 0, 45, 90];
+                const colors = ['#4444ff', '#8888ff', '#44ff44', '#ffaa00', '#ff4444'];
+                
+                rollAngles.forEach((rollAngle, index) => {
+                    const footprintCurve = currentFootprintData.curves[rollAngle];
+                    if (footprintCurve && footprintCurve.length > 0) {
+                        const projectedPoints = projectFootprintCurve(
+                            footprintCurve, startLat, startLng, flightDirection
+                        );
+                        
+                        // Create left and right mirrored curves
+                        const leftCurve = projectedPoints.left;
+                        const rightCurve = projectedPoints.right;
+                        
+                        // Add curves to map
+                        if (leftCurve.length > 0) {
+                            const leftPolyline = L.polyline(leftCurve, {
+                                color: colors[index],
+                                weight: 3,
+                                opacity: 0.8,
+                                dashArray: rollAngle === 0 ? null : '5, 5'
+                            }).addTo(map);
+                            footprintLayers.push(leftPolyline);
+                        }
+                        
+                        if (rightCurve.length > 0) {
+                            const rightPolyline = L.polyline(rightCurve, {
+                                color: colors[index],
+                                weight: 3,
+                                opacity: 0.8,
+                                dashArray: rollAngle === 0 ? null : '5, 5'
+                            }).addTo(map);
+                            footprintLayers.push(rightPolyline);
+                        }
+                    }
+                });
+                
+                // Fit map to show all footprint data
+                if (footprintLayers.length > 0) {
+                    const group = new L.featureGroup(footprintLayers);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+                
+            } catch (error) {
+                console.error('Error projecting footprint:', error);
+                alert('Error projecting footprint: ' + error.message);
+            }
+            
+            document.getElementById('map-loading').style.display = 'none';
+        }
+
+        // Project a single footprint curve onto map coordinates
+        function projectFootprintCurve(footprintCurve, startLat, startLng, flightDirection) {
+            const leftCurve = [];
+            const rightCurve = [];
+            
+            footprintCurve.forEach(point => {
+                // Convert local coordinates (range, crossrange) to lat/lng
+                const range = point.range; // km along flight path
+                const crossrange = point.crossrange; // km perpendicular to flight path
+                
+                // Calculate position along flight path
+                const flightPathPoint = calculateDestination(startLat, startLng, flightDirection, range);
+                
+                // Calculate perpendicular bearing for crossrange
+                const perpBearingLeft = (flightDirection - 90 + 360) % 360;
+                const perpBearingRight = (flightDirection + 90) % 360;
+                
+                // Project crossrange to both sides
+                if (crossrange !== 0) {
+                    const leftPoint = calculateDestination(
+                        flightPathPoint.lat, flightPathPoint.lng, 
+                        perpBearingLeft, Math.abs(crossrange)
+                    );
+                    const rightPoint = calculateDestination(
+                        flightPathPoint.lat, flightPathPoint.lng, 
+                        perpBearingRight, Math.abs(crossrange)
+                    );
+                    
+                    leftCurve.push([leftPoint.lat, leftPoint.lng]);
+                    rightCurve.push([rightPoint.lat, rightPoint.lng]);
+                } else {
+                    // On centerline
+                    leftCurve.push([flightPathPoint.lat, flightPathPoint.lng]);
+                    rightCurve.push([flightPathPoint.lat, flightPathPoint.lng]);
+                }
+            });
+            
+            return { left: leftCurve, right: rightCurve };
+        }
+
+        
+        async function calculateFootprint() {
+            showLoading();
+            
+            try {
+                const params = getFormData();
+                
+                const response = await fetch('/footprint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentFootprintData = data.footprint_data; // Store for map projection
+                    displayFootprintResults(data);
+                    document.getElementById('footprint-section').style.display = 'block';
+                    
+                    // Show map section and initialize if not done
+                    document.getElementById('map-section').style.display = 'block';
+                    if (!map) {
+                        setTimeout(initializeMap, 100); // Small delay to ensure container is visible
+                    }
+                } else {
+                    showError(data.error || 'Footprint calculation failed');
+                }
+                
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+            
+            hideLoading();
+        }
+
+        // Add event listeners for map functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Existing event listeners...
+            document.getElementById('simulateBtn').addEventListener('click', runSimulation);
+            document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
+            document.getElementById('resetBtn').addEventListener('click', resetParameters);
+            document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+            
+            // New map event listeners
+            document.getElementById('projectFootprintBtn').addEventListener('click', projectFootprintOnMap);
+            
+            // Update direction arrow when flight direction changes
+            document.getElementById('flight-direction').addEventListener('input', function() {
+                if (startMarker) {
+                    updateDirectionArrow();
+                }
+            });
+            
+            // Update marker when coordinates change manually
+            document.getElementById('start-latitude').addEventListener('change', function() {
+                const lat = parseFloat(this.value);
+                const lng = parseFloat(document.getElementById('start-longitude').value);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    setStartLocation(lat, lng);
+                    if (map) {
+                        map.setView([lat, lng], map.getZoom());
+                    }
+                }
+            });
+            
+            document.getElementById('start-longitude').addEventListener('change', function() {
+                const lat = parseFloat(document.getElementById('start-latitude').value);
+                const lng = parseFloat(this.value);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    setStartLocation(lat, lng);
+                    if (map) {
+                        map.setView([lat, lng], map.getZoom());
+                    }
+                }
+            });
+        });
+
+        // Add CSS for arrow icon
+        const style = document.createElement('style');
+        style.textContent = `
+            .arrow-icon {
+                background: none !important;
+                border: none !important;
+                color: #667eea;
+                font-size: 16px;
+                text-align: center;
+                line-height: 20px;
+                transform: rotate(var(--rotation, 0deg));
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
