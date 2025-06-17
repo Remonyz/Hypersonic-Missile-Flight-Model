@@ -586,11 +586,11 @@
                     <h3>Initial Conditions</h3>
                     <div class="input-row">
                         <label for="v0">Initial Velocity (km/s):</label>
-                        <input type="number" id="v0" name="v0" value="7.5" step="0.1" min="1" max="15">
+                        <input type="number" id="v0" name="v0" value="3.5" step="0.1" min="1" max="15">
                     </div>
                     <div class="input-row">
                         <label for="gammad0">Initial Flight Path Angle (deg):</label>
-                        <input type="number" id="gammad0" name="gammad0" value="-2.0" step="0.1" min="-45" max="45">
+                        <input type="number" id="gammad0" name="gammad0" value="0" step="0.1" min="-45" max="45">
                     </div>
                     <div class="input-row">
                         <label for="rolld0">Initial Roll Angle (deg):</label>
@@ -623,15 +623,15 @@
                     </div>
                     <div class="input-row">
                         <label for="beta">Ballistic Coefficient (kg/m²):</label>
-                        <input type="number" id="beta" name="beta" value="500" step="10" min="100" max="2000">
+                        <input type="number" id="beta" name="beta" value="4680" step="10" min="100" max="2000">
                     </div>
                     <div class="input-row">
                         <label for="LtoD">Lift-to-Drag Ratio:</label>
-                        <input type="number" id="LtoD" name="LtoD" value="3.0" step="0.1" min="0.5" max="10">
+                        <input type="number" id="LtoD" name="LtoD" value="2.6" step="0.1" min="0.5" max="10">
                     </div>
                     <div class="input-row">
                         <label for="emis">Surface Emissivity:</label>
-                        <input type="number" id="emis" name="emis" value="0.8" step="0.01" min="0.1" max="1.0">
+                        <input type="number" id="emis" name="emis" value="0.85" step="0.01" min="0.1" max="1.0">
                     </div>
                 </div>
 
@@ -650,21 +650,21 @@
 
                 <!-- IR Sensor Wavelengths -->
                 <div class="parameter-group">
-                    <h3>IR Sensor Wavelengths (μm)</h3>
+                    <h3>IR Sensor Wavelengths</h3>
                     <div class="input-row">
-                        <label for="lam1">SBIRS λ₁:</label>
+                        <label for="lam1">Band 1 (lower) (μm):</label>
                         <input type="number" id="lam1" name="lam1" value="2.7" step="0.1" min="1" max="20">
                     </div>
                     <div class="input-row">
-                        <label for="lam2">SBIRS λ₂:</label>
+                        <label for="lam2">Band 1 (upper) (μm):</label>
                         <input type="number" id="lam2" name="lam2" value="2.9" step="0.1" min="1" max="20">
                     </div>
                     <div class="input-row">
-                        <label for="lam3">DSP λ₃:</label>
+                        <label for="lam3">Band 2 (lower) (μm):</label>
                         <input type="number" id="lam3" name="lam3" value="4.2" step="0.1" min="1" max="20">
                     </div>
                     <div class="input-row">
-                        <label for="lam4">DSP λ₄:</label>
+                        <label for="lam4">Band 2 (upper) (μm):</label>
                         <input type="number" id="lam4" name="lam4" value="4.8" step="0.1" min="1" max="20">
                     </div>
                 </div>
@@ -781,16 +781,16 @@
             
             <div class="map-controls">
                 <div class="control-group">
-                    <label for="start-latitude">Start Latitude:</label>
+                    <label for="start-latitude">Latitude:</label>
                     <input type="number" id="start-latitude" value="37.7749" step="0.0001" min="-90" max="90">
                 </div>
                 <div class="control-group">
-                    <label for="start-longitude">Start Longitude:</label>
+                    <label for="start-longitude">Longitude:</label>
                     <input type="number" id="start-longitude" value="-122.4194" step="0.0001" min="-180" max="180">
                 </div>
                 <div class="control-group">
                     <label for="flight-direction">Flight Direction (°):</label>
-                    <input type="number" id="flight-direction" value="45" step="1" min="0" max="359">
+                    <input type="number" id="flight-direction" value="90" step="1" min="0" max="359">
                 </div>
                 <button type="button" id="projectFootprintBtn">Project Footprint</button>
             </div>
@@ -1155,7 +1155,7 @@
             statsContainer.innerHTML = `
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <strong>Footprint Area:</strong> ${data.footprint_area.toFixed(0)} km²
+                        <strong>Footprint Area:</strong> ${data.footprint_area.toLocaleString()} km²
                     </div>
                     <div class="stat-item">
                         <strong>Trajectories Calculated:</strong> ${data.trajectories_count}
