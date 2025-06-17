@@ -112,11 +112,11 @@ class HypersonicGlideSimulator:
         cr0 = params['cr0'] * 1000  # Convert km to m
         t0 = params['t0']
         payload = params['payload']
-        beta = params['beta']
+        betaMetric = params['beta']
         LtoD = params['LtoD']
         
         # Unit conversions
-        betaMetric = beta * 47.9
+        # betaMetric = beta * 47.9
         betaog = betaMetric / 9.81
         coeff = 1 / betaog
         gamma0 = (gammad0 * np.pi) / 180
@@ -305,6 +305,8 @@ class HypersonicGlideSimulator:
         if len(final_points) < 3:
             raise ValueError("Not enough valid trajectories to calculate footprint")
         
+        final_points.append([0, 0])
+
         # Calculate footprint area using convex hull
         final_points = np.array(final_points)
         
@@ -919,7 +921,7 @@ def generate_footprint_plot(footprint_data):
         
         plt.xlabel('Range (km)', fontsize=12)
         plt.ylabel('Crossrange (km)', fontsize=12)
-        plt.title(f'Glider Footprint Analysis\nFootprint Area: {footprint_data["footprint_area"]:.0f} km²', 
+        plt.title(f'Glider Footprint Analysis\nFootprint Area: {footprint_data["footprint_area"]:,.0f} km²', 
                  fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
         plt.axis('equal')
