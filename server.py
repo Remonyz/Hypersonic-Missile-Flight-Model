@@ -270,8 +270,12 @@ class HypersonicGlideSimulator:
     
     def calculate_footprint(self, params):
         """Calculate the footprint area by varying roll angle"""
-        # Roll angles to test (0 to 90 degrees)
-        roll_angles = np.linspace(0, 90, 19)  # 19 angles from 0 to 90
+        # Roll angles to test - include both positive and negative for full footprint
+        positive_angles = np.linspace(0, 90, 10)  # 10 angles from 0 to 90
+        negative_angles = np.linspace(-90, -5, 9)  # 9 angles from -90 to -5 (skip 0 to avoid duplicate)
+        roll_angles = np.concatenate([negative_angles, positive_angles])
+        
+        print(f"Calculating footprint for roll angles: {roll_angles}")
         
         all_trajectories = []
         final_points = []
@@ -281,16 +285,20 @@ class HypersonicGlideSimulator:
             traj_params = params.copy()
             traj_params['rolld0'] = roll_angle
             
+            print(f"Processing roll angle: {roll_angle}")
+            
             # Run trajectory simulation
             try:
                 trajectory = self.simulate_trajectory_only(traj_params)
                 
                 if trajectory['range'] and trajectory['crossrange']:
+                    print(f"Trajectory for {roll_angle}° successful: {len(trajectory['range'])} points")
+                    
                     all_trajectories.append({
-                        'roll_angle': roll_angle,
+                        'roll_angle': float(roll_angle),  # Ensure it's a Python float
                         'range': trajectory['range'],
                         'crossrange': trajectory['crossrange'],
-                        'roll_switched': trajectory['roll_switched']
+                        'roll_switched': trajectory.get('roll_switched', False)
                     })
                     
                     # Store final point for footprint calculation
@@ -298,43 +306,43 @@ class HypersonicGlideSimulator:
                     final_crossrange = trajectory['crossrange'][-1]
                     final_points.append([final_range, final_crossrange])
                     
+                else:
+                    print(f"Trajectory for {roll_angle}° failed: empty range or crossrange")
+                    
             except Exception as e:
                 print(f"Error with roll angle {roll_angle}: {e}")
                 continue
         
+        print(f"Successfully calculated {len(all_trajectories)} trajectories")
+        
         if len(final_points) < 3:
             raise ValueError("Not enough valid trajectories to calculate footprint")
         
+        # Add origin point
         final_points.append([0, 0])
 
         # Calculate footprint area using convex hull
         final_points = np.array(final_points)
         
-        # Create symmetric points (mirror across range axis for negative crossrange)
-        symmetric_points = final_points.copy()
-        symmetric_points[:, 1] = -symmetric_points[:, 1]  # Flip crossrange sign
-        
-        # Combine original and symmetric points
-        all_points = np.vstack([final_points, symmetric_points])
-        
         # Calculate convex hull
         try:
-            hull = ConvexHull(all_points)
+            hull = ConvexHull(final_points)
             footprint_area = hull.volume  # In 2D, volume gives area
+            print(f"Calculated footprint area: {footprint_area} km²")
         except Exception as e:
+            print(f"ConvexHull calculation failed: {e}")
             # Fallback: approximate area using bounding box
-            min_range = np.min(all_points[:, 0])
-            max_range = np.max(all_points[:, 0])
-            min_crossrange = np.min(all_points[:, 1])
-            max_crossrange = np.max(all_points[:, 1])
-            footprint_area = (max_range - min_range) * (max_crossrange - min_crossrange) * 0.8  # 80% of bounding box
+            min_range = np.min(final_points[:, 0])
+            max_range = np.max(final_points[:, 0])
+            min_crossrange = np.min(final_points[:, 1])
+            max_crossrange = np.max(final_points[:, 1])
+            footprint_area = (max_range - min_range) * (max_crossrange - min_crossrange) * 0.8
             hull = None
+            print(f"Using fallback area calculation: {footprint_area} km²")
         
         return {
             'trajectories': all_trajectories,
             'final_points': final_points.tolist(),
-            'symmetric_points': symmetric_points.tolist(),
-            'all_points': all_points.tolist(),
             'footprint_area': footprint_area,
             'hull': hull.vertices.tolist() if hull else None
         }
@@ -706,21 +714,33 @@ def calculate_footprint():
         footprint_plot = generate_footprint_plot(footprint_data)
         print("Footprint plot generated successfully")
         
-        
+        # Build footprint curves for ALL calculated trajectories
         footprint_curves = {}
-        roll_angles = [-90, -45, 0, 45, 90]
         
-        for roll_angle in roll_angles:
-        
-            if 'trajectories' in footprint_data:
-                trajectory = next((t for t in footprint_data['trajectories'] if t.get('roll_angle') == roll_angle), None)
-                if trajectory and 'range' in trajectory and 'crossrange' in trajectory:
-                    footprint_curves[roll_angle] = []
-                    for i in range(len(trajectory['range'])):
-                        footprint_curves[roll_angle].append({
-                            'range': trajectory['range'][i],
-                            'crossrange': trajectory['crossrange'][i]
+        if 'trajectories' in footprint_data:
+            print("Processing trajectories for footprint curves...")
+            for trajectory in footprint_data['trajectories']:
+                roll_angle = trajectory.get('roll_angle')
+                if roll_angle is not None and 'range' in trajectory and 'crossrange' in trajectory:
+                    # Convert roll_angle to string key for JavaScript compatibility
+                    roll_angle_key = str(float(roll_angle))  # Ensure consistent formatting
+                    footprint_curves[roll_angle_key] = []
+                    
+                    range_data = trajectory['range']
+                    crossrange_data = trajectory['crossrange']
+                    
+                    # Make sure both arrays have the same length
+                    min_length = min(len(range_data), len(crossrange_data))
+                    
+                    for i in range(min_length):
+                        footprint_curves[roll_angle_key].append({
+                            'range': float(range_data[i]),
+                            'crossrange': float(crossrange_data[i])
                         })
+                    
+                    print(f"Added {len(footprint_curves[roll_angle_key])} points for roll angle {roll_angle}")
+        
+        print(f"Final footprint_curves keys: {list(footprint_curves.keys())}")
         
         response_data = {
             'success': True,
@@ -734,7 +754,7 @@ def calculate_footprint():
             }
         }
         
-        print(f"Sending response with area: {footprint_data['footprint_area']}")
+        print(f"Sending response with {len(footprint_curves)} roll angle curves")
         return jsonify(response_data)
         
     except Exception as e:
@@ -882,42 +902,70 @@ def generate_footprint_plot(footprint_data):
     try:
         plt.figure(figsize=(12, 10))
         
-        # Plot all trajectories
-        colors = plt.cm.viridis(np.linspace(0, 1, len(footprint_data['trajectories'])))
+        # Separate positive and negative roll angle trajectories
+        positive_trajectories = []
+        negative_trajectories = []
         
-        for i, traj in enumerate(footprint_data['trajectories']):
-            label = f"Roll {traj['roll_angle']:.0f}°"
+        for traj in footprint_data['trajectories']:
+            if traj['roll_angle'] >= 0:
+                positive_trajectories.append(traj)
+            else:
+                negative_trajectories.append(traj)
+        
+        # Plot positive roll angles (positive crossrange)
+        colors_pos = plt.cm.viridis(np.linspace(0, 1, len(positive_trajectories)))
+        for i, traj in enumerate(positive_trajectories):
+            label = f"Roll +{traj['roll_angle']:.0f}°"
             plt.plot(traj['range'], traj['crossrange'], 
-                    color=colors[i], linewidth=1.5, alpha=0.7, label=label)
+                    color=colors_pos[i], linewidth=1.5, alpha=0.7, label=label)
+        
+        # Plot negative roll angles (negative crossrange)
+        colors_neg = plt.cm.plasma(np.linspace(0, 1, len(negative_trajectories)))
+        for i, traj in enumerate(negative_trajectories):
+            label = f"Roll {traj['roll_angle']:.0f}°"
+            # For negative roll angles, plot crossrange as negative to show on opposite side
+            crossrange_values = [-cr if traj['roll_angle'] < 0 else cr for cr in traj['crossrange']]
+            plt.plot(traj['range'], crossrange_values, 
+                    color=colors_neg[i], linewidth=1.5, alpha=0.7, label=label)
+        
+        # Create all points for hull calculation including both sides
+        all_final_points = []
+        for traj in footprint_data['trajectories']:
+            final_range = traj['range'][-1]
+            final_crossrange = traj['crossrange'][-1]
             
-            # Plot symmetric trajectory (negative crossrange)
-            plt.plot(traj['range'], [-cr for cr in traj['crossrange']], 
-                    color=colors[i], linewidth=1.5, alpha=0.7, linestyle='--')
+            if traj['roll_angle'] >= 0:
+                # Positive roll angles on positive side
+                all_final_points.append([final_range, final_crossrange])
+            else:
+                # Negative roll angles on negative side
+                all_final_points.append([final_range, -final_crossrange])
+        
+        # Add origin
+        all_final_points.append([0, 0])
         
         # Plot footprint boundary if convex hull was calculated
-        if footprint_data['hull'] and footprint_data['all_points']:
-            hull_points = np.array(footprint_data['all_points'])
-            hull_indices = footprint_data['hull']
-            
-            # Close the hull by adding the first point at the end
-            hull_indices.append(hull_indices[0])
-            
-            hull_x = [hull_points[i][0] for i in hull_indices]
-            hull_y = [hull_points[i][1] for i in hull_indices]
-            
-            plt.plot(hull_x, hull_y, 'r-', linewidth=3, alpha=0.8, label='Footprint Boundary')
-            plt.fill(hull_x, hull_y, 'red', alpha=0.1)
+        if footprint_data['hull'] and len(all_final_points) > 2:
+            # Recalculate hull with properly positioned points
+            try:
+                from scipy.spatial import ConvexHull
+                hull = ConvexHull(np.array(all_final_points))
+                hull_points = np.array(all_final_points)
+                hull_indices = hull.vertices.tolist() + [hull.vertices[0]]  # Close the hull
+                
+                hull_x = [hull_points[i][0] for i in hull_indices]
+                hull_y = [hull_points[i][1] for i in hull_indices]
+                
+                plt.plot(hull_x, hull_y, 'r-', linewidth=3, alpha=0.8, label='Footprint Boundary')
+                plt.fill(hull_x, hull_y, 'red', alpha=0.1)
+            except:
+                print("Could not plot convex hull")
         
-        # Mark final impact points
-        final_points = np.array(footprint_data['final_points'])
-        symmetric_points = np.array(footprint_data['symmetric_points'])
-        
-        plt.scatter(final_points[:, 0], final_points[:, 1], 
+        # Mark final impact points on both sides
+        final_points_array = np.array(all_final_points[:-1])  # Exclude origin
+        plt.scatter(final_points_array[:, 0], final_points_array[:, 1], 
                    c='red', s=50, marker='o', alpha=0.8, 
-                   label='Impact Points (+)')
-        plt.scatter(symmetric_points[:, 0], symmetric_points[:, 1], 
-                   c='red', s=50, marker='o', alpha=0.8, 
-                   label='Impact Points (-)')
+                   label='Impact Points')
         
         plt.xlabel('Range (km)', fontsize=12)
         plt.ylabel('Crossrange (km)', fontsize=12)
@@ -954,6 +1002,8 @@ def generate_footprint_plot(footprint_data):
         
     except Exception as e:
         print(f"Error generating footprint plot: {e}")
+        import traceback
+        traceback.print_exc()  # This will help debug the exact error
         return None
 
 import os

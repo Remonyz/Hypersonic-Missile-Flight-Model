@@ -800,7 +800,7 @@
                 <div class="direction-indicator">
                     Click on map to set start location, or use coordinates above
                 </div>
-                <div class="footprint-legend">
+                <!-- <div class="footprint-legend">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #ff4444;"></div>
                         <span>Roll +90° (Right Turn)</span>
@@ -817,7 +817,7 @@
                         <div class="legend-color" style="background: #ffaa00;"></div>
                         <span>Roll ±45°</span>
                     </div>
-                </div>
+                </div> -->
                 <div id="map-loading" class="map-loading" style="display: none;">
                     <p>Projecting footprint onto map...</p>
                 </div>
@@ -1337,14 +1337,23 @@
 
         // Project footprint onto map
         async function projectFootprintOnMap() {
+            console.log("=== Starting projectFootprintOnMap ===");
+            
             if (!currentFootprintData) {
+                console.error("No currentFootprintData available");
                 alert('Please calculate footprint first before projecting on map.');
                 return;
             }
             
+            // Deep debug of the footprint data structure
+            console.log('currentFootprintData keys:', Object.keys(currentFootprintData));
+            console.log('Full currentFootprintData:', JSON.stringify(currentFootprintData, null, 2));
+            
             const startLat = parseFloat(document.getElementById('start-latitude').value);
             const startLng = parseFloat(document.getElementById('start-longitude').value);
             const flightDirection = parseFloat(document.getElementById('flight-direction').value);
+            
+            console.log(`Coordinates: lat=${startLat}, lng=${startLng}, direction=${flightDirection}`);
             
             if (isNaN(startLat) || isNaN(startLng) || isNaN(flightDirection)) {
                 alert('Please enter valid coordinates and flight direction.');
@@ -1358,96 +1367,262 @@
                 footprintLayers.forEach(layer => map.removeLayer(layer));
                 footprintLayers = [];
                 
-                // Project each footprint curve
-                const rollAngles = [-90, -45, 0, 45, 90];
-                const colors = ['#4444ff', '#8888ff', '#44ff44', '#ffaa00', '#ff4444'];
+                // Check the structure of currentFootprintData
+                console.log('Checking currentFootprintData.curves:', currentFootprintData.curves);
                 
-                rollAngles.forEach((rollAngle, index) => {
-                    const footprintCurve = currentFootprintData.curves[rollAngle];
-                    if (footprintCurve && footprintCurve.length > 0) {
-                        const projectedPoints = projectFootprintCurve(
-                            footprintCurve, startLat, startLng, flightDirection
-                        );
-                        
-                        // Create left and right mirrored curves
-                        const leftCurve = projectedPoints.left;
-                        const rightCurve = projectedPoints.right;
-                        
-                        // Add curves to map
-                        if (leftCurve.length > 0) {
-                            const leftPolyline = L.polyline(leftCurve, {
-                                color: colors[index],
-                                weight: 3,
-                                opacity: 0.8,
-                                dashArray: rollAngle === 0 ? null : '5, 5'
-                            }).addTo(map);
-                            footprintLayers.push(leftPolyline);
-                        }
-                        
-                        if (rightCurve.length > 0) {
-                            const rightPolyline = L.polyline(rightCurve, {
-                                color: colors[index],
-                                weight: 3,
-                                opacity: 0.8,
-                                dashArray: rollAngle === 0 ? null : '5, 5'
-                            }).addTo(map);
-                            footprintLayers.push(rightPolyline);
+                if (!currentFootprintData.curves) {
+                    console.error('currentFootprintData.curves is undefined or null');
+                    alert('No curves found in footprint data. Data structure issue.');
+                    return;
+                }
+                
+                if (Object.keys(currentFootprintData.curves).length === 0) {
+                    console.error('currentFootprintData.curves is empty object');
+                    alert('No curves found in footprint data. Empty curves object.');
+                    return;
+                }
+                
+                // Get all available roll angles - handle both string and numeric keys
+                const curveKeys = Object.keys(currentFootprintData.curves);
+                console.log('Raw curve keys:', curveKeys);
+                
+                const availableRollAngles = curveKeys.map(angle => {
+                    const parsed = parseFloat(angle);
+                    console.log(`Parsing angle key "${angle}" -> ${parsed}`);
+                    return parsed;
+                }).filter(angle => !isNaN(angle));
+                
+                console.log('Parsed roll angles:', availableRollAngles);
+                
+                availableRollAngles.sort((a, b) => a - b);
+                console.log('Sorted roll angles:', availableRollAngles);
+                
+                // Check if 0 degree is present
+                const hasZeroDegree = availableRollAngles.some(angle => Math.abs(angle) < 0.001);
+                console.log('Has 0 degree angle:', hasZeroDegree);
+                
+                // Generate colors
+                const colors = generateColors(availableRollAngles.length);
+                console.log('Generated colors:', colors);
+                
+                let curvesProcessed = 0;
+                let curvesAdded = 0;
+                
+                for (let i = 0; i < availableRollAngles.length; i++) {
+                    const rollAngle = availableRollAngles[i];
+                    
+                    // Try multiple key formats to find the curve data
+                    let footprintCurve = null;
+                    let keyUsed = null;
+                    
+                    // Try different key formats
+                    const possibleKeys = [
+                        rollAngle.toString(),
+                        rollAngle.toFixed(1),
+                        rollAngle.toFixed(0),
+                        Math.round(rollAngle).toString(),
+                        rollAngle
+                    ];
+                    
+                    for (const key of possibleKeys) {
+                        if (currentFootprintData.curves[key]) {
+                            footprintCurve = currentFootprintData.curves[key];
+                            keyUsed = key;
+                            break;
                         }
                     }
-                });
+                    
+                    console.log(`\n--- Processing roll angle ${rollAngle} (${i+1}/${availableRollAngles.length}) ---`);
+                    console.log('Key used:', keyUsed);
+                    console.log('Curve data found:', !!footprintCurve);
+                    
+                    curvesProcessed++;
+                    
+                    if (!footprintCurve) {
+                        console.warn(`No curve data for roll angle ${rollAngle} - tried keys:`, possibleKeys);
+                        continue;
+                    }
+                    
+                    if (!Array.isArray(footprintCurve)) {
+                        console.warn(`Curve data for roll angle ${rollAngle} is not an array:`, typeof footprintCurve);
+                        continue;
+                    }
+                    
+                    if (footprintCurve.length === 0) {
+                        console.warn(`Empty curve for roll angle ${rollAngle}`);
+                        continue;
+                    }
+                    
+                    console.log(`Curve has ${footprintCurve.length} points`);
+                    console.log('First few points:', footprintCurve.slice(0, 3));
+                    
+                    // Validate point structure
+                    let validPoints = true;
+                    for (let j = 0; j < Math.min(3, footprintCurve.length); j++) {
+                        const point = footprintCurve[j];
+                        if (!point || typeof point.range !== 'number' || typeof point.crossrange !== 'number') {
+                            console.error(`Invalid point structure at index ${j}:`, point);
+                            validPoints = false;
+                            break;
+                        }
+                    }
+                    
+                    if (!validPoints) {
+                        console.warn(`Skipping roll angle ${rollAngle} due to invalid point structure`);
+                        continue;
+                    }
+                    
+                    try {
+                        const projectedPoints = projectFootprintCurve(
+                            footprintCurve, startLat, startLng, flightDirection, rollAngle
+                        );
+                        
+                        console.log(`Projection result for ${rollAngle}°:`, projectedPoints);
+                        
+                        const curve = projectedPoints.curve;
+                        
+                        // Add curve to map
+                        if (curve && curve.length > 0) {
+                            console.log(`Adding curve for ${rollAngle}° with ${curve.length} points`);
+                            
+                            // Special styling for 0-degree line (centerline)
+                            const isZeroDegree = Math.abs(rollAngle) < 0.001;
+                            
+                            const polyline = L.polyline(curve, {
+                                color: isZeroDegree ? '#FF0000' : colors[i], // Red for centerline
+                                weight: isZeroDegree ? 4 : 3, // Thicker for centerline
+                                opacity: isZeroDegree ? 1.0 : 0.8,
+                                dashArray: isZeroDegree ? null : '5, 5' // Solid line for centerline
+                            }).addTo(map);
+                            
+                            polyline.bindTooltip(`Roll: ${rollAngle}°${isZeroDegree ? ' (Centerline)' : ''}`);
+                            footprintLayers.push(polyline);
+                            curvesAdded++;
+                        } else {
+                            console.warn(`No valid curve for roll angle ${rollAngle}`);
+                        }
+                        
+                    } catch (projectionError) {
+                        console.error(`Error projecting curve for roll angle ${rollAngle}:`, projectionError);
+                    }
+                }
+                
+                console.log(`\n=== Summary ===`);
+                console.log(`Curves processed: ${curvesProcessed}`);
+                console.log(`Curves added to map: ${curvesAdded}`);
+                console.log(`Total footprint layers: ${footprintLayers.length}`);
                 
                 // Fit map to show all footprint data
                 if (footprintLayers.length > 0) {
                     const group = new L.featureGroup(footprintLayers);
-                    map.fitBounds(group.getBounds().pad(0.1));
+                    const bounds = group.getBounds();
+                    console.log('Fitting map to bounds:', bounds);
+                    map.fitBounds(bounds.pad(0.1));
+                    console.log('Map fitted successfully');
+                } else {
+                    console.error('No footprint layers to display on map');
+                    alert('No footprint curves could be projected to the map. Check console for details.');
                 }
                 
             } catch (error) {
-                console.error('Error projecting footprint:', error);
+                console.error('Error in projectFootprintOnMap:', error);
                 alert('Error projecting footprint: ' + error.message);
             }
             
             document.getElementById('map-loading').style.display = 'none';
+            console.log("=== Finished projectFootprintOnMap ===");
         }
 
-        // Project a single footprint curve onto map coordinates
-        function projectFootprintCurve(footprintCurve, startLat, startLng, flightDirection) {
-            const leftCurve = [];
-            const rightCurve = [];
+        // Updated projection function to handle single curves properly
+        function projectFootprintCurve(footprintCurve, startLat, startLng, flightDirection, rollAngle) {
+            console.log(`  Projecting curve for roll ${rollAngle}° with ${footprintCurve.length} points`);
             
-            footprintCurve.forEach(point => {
-                // Convert local coordinates (range, crossrange) to lat/lng
-                const range = point.range; // km along flight path
-                const crossrange = point.crossrange; // km perpendicular to flight path
+            const curve = [];
+            
+            for (let i = 0; i < footprintCurve.length; i++) {
+                const point = footprintCurve[i];
+                const range = point.range;
+                let crossrange = point.crossrange;
+                
+                // For negative roll angles, ensure crossrange reflects the correct side
+                if (rollAngle < 0 && crossrange > 0) {
+                    crossrange = -crossrange;
+                }
+                
+                if (i < 3) {
+                    console.log(`  Point ${i}: range=${range}km, crossrange=${crossrange}km`);
+                }
                 
                 // Calculate position along flight path
                 const flightPathPoint = calculateDestination(startLat, startLng, flightDirection, range);
                 
-                // Calculate perpendicular bearing for crossrange
-                const perpBearingLeft = (flightDirection - 90 + 360) % 360;
-                const perpBearingRight = (flightDirection + 90) % 360;
+                if (i < 3) {
+                    console.log(`  Flight path point ${i}:`, flightPathPoint);
+                }
                 
-                // Project crossrange to both sides
-                if (crossrange !== 0) {
-                    const leftPoint = calculateDestination(
+                // For zero crossrange (centerline), just use the flight path point
+                if (Math.abs(crossrange) < 0.001) {
+                    curve.push([flightPathPoint.lat, flightPathPoint.lng]);
+                    if (i < 3) {
+                        console.log(`  Centerline point ${i}:`, flightPathPoint);
+                    }
+                } else {
+                    // Calculate perpendicular bearing based on crossrange sign
+                    const perpBearing = crossrange > 0 ? 
+                        (flightDirection + 90) % 360 : // Right side (positive crossrange)
+                        (flightDirection - 90 + 360) % 360; // Left side (negative crossrange)
+                    
+                    // Project crossrange perpendicular to flight path
+                    const projectedPoint = calculateDestination(
                         flightPathPoint.lat, flightPathPoint.lng, 
-                        perpBearingLeft, Math.abs(crossrange)
-                    );
-                    const rightPoint = calculateDestination(
-                        flightPathPoint.lat, flightPathPoint.lng, 
-                        perpBearingRight, Math.abs(crossrange)
+                        perpBearing, Math.abs(crossrange)
                     );
                     
-                    leftCurve.push([leftPoint.lat, leftPoint.lng]);
-                    rightCurve.push([rightPoint.lat, rightPoint.lng]);
-                } else {
-                    // On centerline
-                    leftCurve.push([flightPathPoint.lat, flightPathPoint.lng]);
-                    rightCurve.push([flightPathPoint.lat, flightPathPoint.lng]);
+                    curve.push([projectedPoint.lat, projectedPoint.lng]);
+                    
+                    if (i < 3) {
+                        console.log(`  Projected point ${i}:`, projectedPoint);
+                    }
                 }
-            });
+            }
             
-            return { left: leftCurve, right: rightCurve };
+            console.log(`  Projection complete: ${curve.length} points`);
+            
+            return { curve: curve };
+        }
+
+        // Helper function to generate distinct colors
+        function generateColors(count) {
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                const hue = (i * 360 / count) % 360;
+                colors.push(`hsl(${hue}, 70%, 50%)`);
+            }
+            return colors;
+        }
+
+        // Helper function to calculate destination point
+        function calculateDestination(lat1, lng1, bearing, distance) {
+            const R = 6371; // Earth's radius in kilometers
+            const lat1Rad = lat1 * Math.PI / 180;
+            const lng1Rad = lng1 * Math.PI / 180;
+            const bearingRad = bearing * Math.PI / 180;
+            const distanceRatio = distance / R;
+            
+            const lat2Rad = Math.asin(
+                Math.sin(lat1Rad) * Math.cos(distanceRatio) +
+                Math.cos(lat1Rad) * Math.sin(distanceRatio) * Math.cos(bearingRad)
+            );
+            
+            const lng2Rad = lng1Rad + Math.atan2(
+                Math.sin(bearingRad) * Math.sin(distanceRatio) * Math.cos(lat1Rad),
+                Math.cos(distanceRatio) - Math.sin(lat1Rad) * Math.sin(lat2Rad)
+            );
+            
+            return {
+                lat: lat2Rad * 180 / Math.PI,
+                lng: lng2Rad * 180 / Math.PI
+            };
         }
 
         
