@@ -148,8 +148,14 @@
             letter-spacing: 0.5px;
         }
 
-        #simulateBtn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+        #laminarBtn {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #turbulentBtn {
+            background: linear-gradient(45deg, #f55b2c, #e92626);
             color: white;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
@@ -161,7 +167,7 @@
         }
 
         #resetBtn {
-            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            background: linear-gradient(45deg, #b2fe4f, #26fe00);
             color: white;
             box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
         }
@@ -671,7 +677,8 @@
 
                 <!-- Buttons -->
                 <div class="button-group">
-                    <button type="button" id="simulateBtn">Run Simulation</button>
+                    <button type="button" id="laminarBtn">Laminar</button>
+                    <button type="button" id="turbulentBtn">Turbulent</button>
                     <button type="button" id="footprintBtn">Calculate Footprint</button>
                     <button type="button" id="resetBtn">Reset Parameters</button>
                 </div>
@@ -866,11 +873,17 @@
 
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('simulateBtn').addEventListener('click', runSimulation);
+            document.getElementById('laminarBtn').addEventListener('click', function() {
+                runSimulation('laminar');
+            });
+            document.getElementById('turbulentBtn').addEventListener('click', function() {
+                runSimulation('turbulent');
+            });
             document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
             document.getElementById('resetBtn').addEventListener('click', resetParameters);
             document.getElementById('exportBtn').addEventListener('click', exportToCSV);
         });
+
 
         // Get form data as object
         function getFormData() {
@@ -921,12 +934,11 @@
         }
 
         // Run main simulation
-        async function runSimulation() {
+        async function runSimulation(mode) {
             showLoading();
-            
             try {
                 const params = getFormData();
-                
+                params.mode = mode; // Add the mode (laminar or turbulent)
                 const response = await fetch('/simulate', {
                     method: 'POST',
                     headers: {
@@ -934,9 +946,7 @@
                     },
                     body: JSON.stringify(params)
                 });
-                
                 const data = await response.json();
-                
                 if (data.success) {
                     currentResults = data.results;
                     displayResults(data.results, data.plots);
@@ -944,13 +954,12 @@
                 } else {
                     showError(data.error || 'Simulation failed');
                 }
-                
             } catch (error) {
                 showError('Network error: ' + error.message);
             }
-            
             hideLoading();
         }
+
 
         // Calculate footprint analysis
         async function calculateFootprint() {
@@ -1666,7 +1675,12 @@
         // Add event listeners for map functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Existing event listeners...
-            document.getElementById('simulateBtn').addEventListener('click', runSimulation);
+            document.getElementById('laminarBtn').addEventListener('click', function() {
+                runSimulation('laminar');
+            });
+            document.getElementById('turbulentBtn').addEventListener('click', function() {
+                runSimulation('turbulent');
+            });
             document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
             document.getElementById('resetBtn').addEventListener('click', resetParameters);
             document.getElementById('exportBtn').addEventListener('click', exportToCSV);

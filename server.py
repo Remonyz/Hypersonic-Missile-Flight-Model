@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import base64
-import io
+import io, os
 import json
 
 app = Flask(__name__)
@@ -347,7 +347,7 @@ class HypersonicGlideSimulator:
             'hull': hull.vertices.tolist() if hull else None
         }
 
-    def simulate(self, params):
+    def simulate(self, params, mode=None):
         """Main simulation function"""
         # Extract parameters
         v0 = params['v0'] * 1000  # Convert km/s to m/s
@@ -395,17 +395,16 @@ class HypersonicGlideSimulator:
         Cphi2 = np.cos(phi2rad)
         Sphi2 = np.sin(phi2rad)
         
-        # LAMINAR coefficients (low Reynolds number)
-        Clam1 = 0.000776 * (Cphi1 ** 1.83) * (Sphi1 ** 1.6) / (distance1 ** 0.1)
-        Clam2 = 0.000776 * (Cphi2 ** 1.83) * (Sphi2 ** 1.6) / (distance2 ** 0.1)
+        # Laminar coefficients
+        Clam1 = 0.0000253 * (Cphi1 ** 0.5) * (Sphi1) / (distance1 ** 0.5)
+        Clam2 = 0.0000253 * (Cphi2 ** 0.5) * (Sphi2) / (distance2 ** 0.5)
         
-        # Turbulent high speed (V > 4km/s) coefficients
+        # Turbulent coefficients
         Cthv1 = 0.000022 * (Cphi1 ** 2.08) * (Sphi1 ** 1.6) / (distance1 ** 0.2)
         Cthv2 = 0.000022 * (Cphi2 ** 2.08) * (Sphi2 ** 1.6) / (distance2 ** 0.2)
-        
-        # Turbulent low speed (V <= 4km/s) coefficients 
         Ctlv1 = 0.000389 * (Cphi1 ** 1.78) * (Sphi1 ** 1.6) / (distance1 ** 0.2)
         Ctlv2 = 0.000389 * (Cphi2 ** 1.78) * (Sphi2 ** 1.6) / (distance2 ** 0.2)
+
         
         # Initialize variables
         t = t0
@@ -551,8 +550,16 @@ class HypersonicGlideSimulator:
                 Re2 = self.reynolds_number(rho, v, distance2)
                 
                 # Determine boundary layer type
-                is_turbulent_1 = Re1 > Re_critical
-                is_turbulent_2 = Re2 > Re_critical
+                if mode == "laminar":
+                    is_turbulent_1 = False
+                    is_turbulent_2 = False
+                elif mode == "turbulent":
+                    is_turbulent_1 = True
+                    is_turbulent_2 = True
+                else:
+                    is_turbulent_1 = Re1 > Re_critical
+                    is_turbulent_2 = Re2 > Re_critical
+
                 
                 # Calculate heating 
                 enth0 = (0.5 * (v ** 2)) + 0.000023
@@ -576,7 +583,7 @@ class HypersonicGlideSimulator:
                         qWALL1 = Ctlv1 * (rho ** 0.8) * (v ** 3.37) * (1 - (1.11 * enthratioW1)) * ((556 / Tw1) ** 0.25)
                 else:
                     # Laminar flow equations
-                    qWALL1 = Clam1 * (rho ** 0.5) * (v ** 3.2) * (1 - (1.11 * enthratioW1)) * ((556 / Tw1) ** 0.1)
+                    qWALL1 = Clam1 * (rho ** 0.5) * (v ** 3.2) * (1 - (enthratioW1))
                 
                 if is_turbulent_2:
                     if v > 4000:  # High speed turbulent equations (v > 4km/s)
@@ -585,7 +592,7 @@ class HypersonicGlideSimulator:
                         qWall2 = Ctlv2 * (rho ** 0.8) * (v ** 3.37) * (1 - (1.11 * enthratioW2)) * ((556 / Tw2) ** 0.25)
                 else:
                     # Laminar flow equations
-                    qWall2 = Clam2 * (rho ** 0.5) * (v ** 3.2) * (1 - (1.11 * enthratioW2)) * ((556 / Tw2) ** 0.1)
+                    qWall2 = Clam2 * (rho ** 0.5) * (v ** 3.2) * (1 - (enthratioW2))
                 
                 IR_SBIRS = 0
                 IR_DSP = 0
@@ -674,7 +681,8 @@ def simulate():
         simulator = HypersonicGlideSimulator()
         
         # Run simulation
-        results = simulator.simulate(data)
+        mode = data.get('mode', None)
+        results = simulator.simulate(data, mode=mode)
         
         # Generate plots
         plots = generate_plots(results)
@@ -1006,8 +1014,6 @@ def generate_footprint_plot(footprint_data):
         traceback.print_exc()  # This will help debug the exact error
         return None
 
-import os
-
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5050))
+    port = int(os.environ.get("PORT", 5051))
     app.run(host='0.0.0.0', port=port, debug=True)                                                                                     
