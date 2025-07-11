@@ -577,6 +577,220 @@
             font-weight: 500;
             color: #667eea;
         }
+
+        .advanced-settings-btn {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .advanced-settings-btn:hover {
+            background: #e9ecef;
+        }
+
+        .advanced-settings-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        .roll-changes-info {
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .roll-change-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .roll-change-item label {
+            font-weight: 500;
+            min-width: 80px;
+        }
+
+        .roll-change-item input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .remove-roll-change-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .remove-roll-change-btn:hover {
+            background: #c82333;
+        }
+
+        .add-roll-change-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .add-roll-change-btn:hover {
+            background: #218838;
+        }
+
+        .trajectory-map-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .trajectory-map-controls {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            flex-wrap: wrap;
+        }
+
+        .trajectory-map-controls .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .trajectory-map-controls label {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .trajectory-map-controls input {
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 120px;
+        }
+
+        #projectTrajectoryBtn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        #projectTrajectoryBtn:hover {
+            background: #0056b3;
+        }
+
+        #trajectory-map-container {
+            position: relative;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #trajectory-map {
+            width: 100%;
+            height: 500px;
+        }
+
+        .trajectory-direction-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .trajectory-legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .trajectory-legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .trajectory-legend .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .trajectory-legend .legend-color {
+            display: inline-block;
+        }
+
+        .map-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -608,15 +822,39 @@
                     </div>
                     <div class="input-row">
                         <label for="r0">Initial Range (km):</label>
-                        <input type="number" id="r0" name="r0" value="0" step="1" min="0" max="1000">
+                        <input type="number" id="r0" name="r0" value="0" step="1" min="0" max="1000" readonly>
                     </div>
                     <div class="input-row">
                         <label for="cr0">Initial Crossrange (km):</label>
-                        <input type="number" id="cr0" name="cr0" value="0" step="1" min="-1000" max="1000">
+                        <input type="number" id="cr0" name="cr0" value="0" step="1" min="-1000" max="1000" readonly>
                     </div>
                     <div class="input-row">
                         <label for="t0">Initial Time (s):</label>
-                        <input type="number" id="t0" name="t0" value="0" step="1" min="0" max="1000">
+                        <input type="number" id="t0" name="t0" value="0" step="1" min="0" max="1000" readonly>
+                    </div>
+                    
+                    <!-- Advanced Settings Toggle -->
+                    <div class="input-row">
+                        <button type="button" id="advancedSettingsBtn" class="advanced-settings-btn">
+                            <span id="advancedSettingsText">Show Advanced Settings</span>
+                            <span id="advancedSettingsIcon">▼</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Advanced Settings Panel -->
+                    <div id="advancedSettingsPanel" class="advanced-settings-panel" style="display: none;">
+                        <h4>Roll Angle Time Changes</h4>
+                        <div class="roll-changes-info">
+                            <p>Define specific times when the roll angle should change during flight:</p>
+                        </div>
+                        
+                        <div id="rollChangesContainer">
+                            <!-- Roll angle changes will be added here dynamically -->
+                        </div>
+                        
+                        <button type="button" id="addRollChangeBtn" class="add-roll-change-btn">
+                            + Add Roll Change
+                        </button>
                     </div>
                 </div>
 
@@ -635,14 +873,14 @@
                         <label for="LtoD">Lift-to-Drag Ratio:</label>
                         <input type="number" id="LtoD" name="LtoD" value="2.6" step="0.1" min="0.5" max="10">
                     </div>
-                    <div class="input-row">
+                    <!-- <div class="input-row">
                         <label for="emis">Surface Emissivity:</label>
                         <input type="number" id="emis" name="emis" value="0.85" step="0.01" min="0.1" max="1.0">
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Thermal Analysis Parameters -->
-                <div class="parameter-group">
+                <!-- <div class="parameter-group">
                     <h3>Thermal Analysis</h3>
                     <div class="input-row">
                         <label for="distance1">Distance 1 (m):</label>
@@ -652,10 +890,10 @@
                         <label for="distance2">Distance 2 (m):</label>
                         <input type="number" id="distance2" name="distance2" value="2.0" step="0.1" min="0.1" max="10">
                     </div>
-                </div>
+                </div> -->
 
                 <!-- IR Sensor Wavelengths -->
-                <div class="parameter-group">
+                <!-- <div class="parameter-group">
                     <h3>IR Sensor Wavelengths</h3>
                     <div class="input-row">
                         <label for="lam1">Band 1 (lower) (μm):</label>
@@ -673,13 +911,11 @@
                         <label for="lam4">Band 2 (upper) (μm):</label>
                         <input type="number" id="lam4" name="lam4" value="4.8" step="0.1" min="1" max="20">
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Buttons -->
                 <div class="button-group">
-                    <button type="button" id="laminarBtn">Laminar</button>
-                    <button type="button" id="turbulentBtn">Turbulent</button>
-                    <button type="button" id="footprintBtn">Calculate Footprint</button>
+                    <button type="button" id="runSimulationBtn">Run Simulation</button>
                     <button type="button" id="resetBtn">Reset Parameters</button>
                 </div>
             </form>
@@ -721,7 +957,7 @@
                     <div id="plot-crossrange-range" style="width: 100%; height: 400px;"></div>
                 </div>
                 
-                <div class="plot-container">
+                <!-- <div class="plot-container">
                     <h3>Temperature 1 vs Range</h3>
                     <div id="plot-t1-range" style="width: 100%; height: 400px;"></div>
                 </div>
@@ -739,6 +975,113 @@
                 <div class="plot-container">
                     <h3>SBIRS IR Intensity vs Range</h3>
                     <div id="plot-ir-sbirs-range" style="width: 100%; height: 400px;"></div>
+                </div> -->
+            </div>
+
+            <!-- Footprint Results Section -->
+            <div id="footprint-section" style="display: none;">
+                <h2>Footprint Analysis Results</h2>
+                
+                <div id="footprint-stats">
+                    <h3>Footprint Statistics</h3>
+                    <div id="footprint-stats-content"></div>
+                </div>
+
+                <div class="plot-container">
+                    <h3>Glider Footprint</h3>
+                    <img id="plot-footprint" src="" alt="Glider Footprint">
+                </div>
+            </div>
+
+            <div id="map-section" style="display: none;">
+                <h2>Footprint Map Projection</h2>
+                
+                <div class="map-controls">
+                    <div class="control-group">
+                        <label for="start-latitude">Latitude:</label>
+                        <input type="number" id="start-latitude" value="37.7749" step="0.0001" min="-90" max="90">
+                    </div>
+                    <div class="control-group">
+                        <label for="start-longitude">Longitude:</label>
+                        <input type="number" id="start-longitude" value="-122.4194" step="0.0001" min="-180" max="180">
+                    </div>
+                    <div class="control-group">
+                        <label for="flight-direction">Flight Direction (°):</label>
+                        <input type="number" id="flight-direction" value="90" step="1" min="0" max="359">
+                    </div>
+                    <button type="button" id="projectFootprintBtn">Project Footprint</button>
+                </div>
+                
+                <div id="map-container">
+                    <div id="map"></div>
+                    <div class="direction-indicator">
+                        Click on map to set start location, or use coordinates above
+                    </div>
+                    <!-- <div class="footprint-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff4444;"></div>
+                            <span>Roll +90° (Right Turn)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #44ff44;"></div>
+                            <span>Roll 0° (Straight)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4444ff;"></div>
+                            <span>Roll -90° (Left Turn)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffaa00;"></div>
+                            <span>Roll ±45°</span>
+                        </div>
+                    </div> -->
+                    <div id="map-loading" class="map-loading" style="display: none;">
+                        <p>Projecting footprint onto map...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="trajectory-map-section" style="display: none;">
+                <h2>Flight Trajectory Map</h2>
+                
+                <div class="trajectory-map-info">
+                    <p>This map shows the actual flight path with cross-range deviations based on your roll angle changes.</p>
+                </div>
+                
+                <div class="trajectory-map-controls">
+                    <div class="control-group">
+                        <label for="trajectory-start-latitude">Start Latitude:</label>
+                        <input type="number" id="trajectory-start-latitude" value="37.7749" step="0.0001" min="-90" max="90">
+                    </div>
+                    <div class="control-group">
+                        <label for="trajectory-start-longitude">Start Longitude:</label>
+                        <input type="number" id="trajectory-start-longitude" value="-122.4194" step="0.0001" min="-180" max="180">
+                    </div>
+                    <div class="control-group">
+                        <label for="trajectory-flight-direction">Flight Direction (°):</label>
+                        <input type="number" id="trajectory-flight-direction" value="90" step="1" min="0" max="359">
+                    </div>
+                    <button type="button" id="projectTrajectoryBtn">Project Trajectory</button>
+                </div>
+                
+                <div id="trajectory-map-container">
+                    <div id="trajectory-map"></div>
+                    <div class="trajectory-direction-indicator">
+                        Click on map to set start location, or use coordinates above
+                    </div>
+                    <div class="trajectory-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff4444; width: 4px; height: 20px;"></div>
+                            <span>Flight Path</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #44ff44; width: 8px; height: 8px; border-radius: 50%;"></div>
+                            <span>Roll Change Points</span>
+                        </div>
+                    </div>
+                    <div id="trajectory-map-loading" class="map-loading" style="display: none;">
+                        <p>Projecting trajectory onto map...</p>
+                    </div>
                 </div>
             </div>
 
@@ -755,11 +1098,7 @@
                                 <th>Velocity (km/s)</th>
                                 <th>Range (km)</th>
                                 <th>Crossrange (km)</th>
-                                <th>Temp 1 (K)</th>
-                                <th>Temp 2 (K)</th>
-                                <th>IR SBIRS</th>
-                                <th>IR DSP</th>
-                                <th>Boundary Layer</th>
+                                <!-- <th>Boundary Layer</th> -->
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -768,68 +1107,7 @@
             </div>
         </div>
 
-        <!-- Footprint Results Section -->
-        <div id="footprint-section" style="display: none;">
-            <h2>Footprint Analysis Results</h2>
-            
-            <div id="footprint-stats">
-                <h3>Footprint Statistics</h3>
-                <div id="footprint-stats-content"></div>
-            </div>
-
-            <div class="plot-container">
-                <h3>Glider Footprint</h3>
-                <img id="plot-footprint" src="" alt="Glider Footprint">
-            </div>
-        </div>
-
-        <div id="map-section" style="display: none;">
-            <h2>Footprint Map Projection</h2>
-            
-            <div class="map-controls">
-                <div class="control-group">
-                    <label for="start-latitude">Latitude:</label>
-                    <input type="number" id="start-latitude" value="37.7749" step="0.0001" min="-90" max="90">
-                </div>
-                <div class="control-group">
-                    <label for="start-longitude">Longitude:</label>
-                    <input type="number" id="start-longitude" value="-122.4194" step="0.0001" min="-180" max="180">
-                </div>
-                <div class="control-group">
-                    <label for="flight-direction">Flight Direction (°):</label>
-                    <input type="number" id="flight-direction" value="90" step="1" min="0" max="359">
-                </div>
-                <button type="button" id="projectFootprintBtn">Project Footprint</button>
-            </div>
-            
-            <div id="map-container">
-                <div id="map"></div>
-                <div class="direction-indicator">
-                    Click on map to set start location, or use coordinates above
-                </div>
-                <!-- <div class="footprint-legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ff4444;"></div>
-                        <span>Roll +90° (Right Turn)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #44ff44;"></div>
-                        <span>Roll 0° (Straight)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #4444ff;"></div>
-                        <span>Roll -90° (Left Turn)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ffaa00;"></div>
-                        <span>Roll ±45°</span>
-                    </div>
-                </div> -->
-                <div id="map-loading" class="map-loading" style="display: none;">
-                    <p>Projecting footprint onto map...</p>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Error Messages -->
         <div id="error-section" style="display: none;">
@@ -853,14 +1131,7 @@
             t0: 0,
             payload: 1000,
             beta: 500,
-            LtoD: 3.0,
-            emis: 0.8,
-            distance1: 1.0,
-            distance2: 2.0,
-            lam1: 2.7,
-            lam2: 2.9,
-            lam3: 4.2,
-            lam4: 4.8
+            LtoD: 3.0
         };
 
         // Global variables to store results
@@ -870,20 +1141,112 @@
         let directionArrow = null;
         let footprintLayers = [];
         let currentFootprintData = null;
+        let rollChanges = [];
+        let trajectoryMap = null;
+        let trajectoryStartMarker = null;
+        let trajectoryDirectionArrow = null;
+        let trajectoryLayers = [];
+        let rollChangeCounter = 0;
 
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('laminarBtn').addEventListener('click', function() {
-                runSimulation('laminar');
-            });
-            document.getElementById('turbulentBtn').addEventListener('click', function() {
-                runSimulation('turbulent');
-            });
-            document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
+            initializeTrajectoryProjection();
+            // document.getElementById('laminarBtn').addEventListener('click', function() {
+            //     runSimulation();
+            // });
+            // document.getElementById('turbulentBtn').addEventListener('click', function() {
+            //     runSimulation();
+            // });
+            // document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
+            document.getElementById('runSimulationBtn').addEventListener('click', runCompleteSimulation);
             document.getElementById('resetBtn').addEventListener('click', resetParameters);
             document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+            document.getElementById('advancedSettingsBtn').addEventListener('click', toggleAdvancedSettings);
+            document.getElementById('addRollChangeBtn').addEventListener('click', addRollChange);
+            document.getElementById('projectTrajectoryBtn').addEventListener('click', projectTrajectoryOnMap);
+
+            document.getElementById('trajectory-start-latitude').addEventListener('change', updateTrajectoryStartLocation);
+            document.getElementById('trajectory-start-longitude').addEventListener('change', updateTrajectoryStartLocation);
+            document.getElementById('trajectory-flight-direction').addEventListener('input', updateTrajectoryDirection);
         });
 
+        function toggleAdvancedSettings() {
+            const panel = document.getElementById('advancedSettingsPanel');
+            const text = document.getElementById('advancedSettingsText');
+            const icon = document.getElementById('advancedSettingsIcon');
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                text.textContent = 'Hide Advanced Settings';
+                icon.textContent = '▲';
+            } else {
+                panel.style.display = 'none';
+                text.textContent = 'Show Advanced Settings';
+                icon.textContent = '▼';
+            }
+        }
+
+        function addRollChange() {
+            rollChangeCounter++;
+            const container = document.getElementById('rollChangesContainer');
+            
+            const rollChangeDiv = document.createElement('div');
+            rollChangeDiv.className = 'roll-change-item';
+            rollChangeDiv.id = `roll-change-${rollChangeCounter}`;
+            
+            rollChangeDiv.innerHTML = `
+                <label for="roll-time-${rollChangeCounter}">Time (s):</label>
+                <input type="number" id="roll-time-${rollChangeCounter}" name="roll-time-${rollChangeCounter}" 
+                    value="10" step="0.1" min="0" max="1000" placeholder="Time in seconds">
+                
+                <label for="roll-angle-${rollChangeCounter}">Roll Angle (°):</label>
+                <input type="number" id="roll-angle-${rollChangeCounter}" name="roll-angle-${rollChangeCounter}" 
+                    value="0" step="1" min="-90" max="90" placeholder="Roll angle in degrees">
+                
+                <button type="button" class="remove-roll-change-btn" onclick="removeRollChange(${rollChangeCounter})">
+                    Remove
+                </button>
+            `;
+            
+            container.appendChild(rollChangeDiv);
+            
+            // Update the rollChanges array
+            updateRollChangesArray();
+        }
+
+        function removeRollChange(id) {
+            const element = document.getElementById(`roll-change-${id}`);
+            if (element) {
+                element.remove();
+                updateRollChangesArray();
+            }
+        }
+
+        function updateRollChangesArray() {
+            rollChanges = [];
+            const container = document.getElementById('rollChangesContainer');
+            const rollChangeItems = container.querySelectorAll('.roll-change-item');
+            
+            rollChangeItems.forEach(item => {
+                const timeInput = item.querySelector('input[id^="roll-time-"]');
+                const angleInput = item.querySelector('input[id^="roll-angle-"]');
+                
+                if (timeInput && angleInput) {
+                    const time = parseFloat(timeInput.value);
+                    const angle = parseFloat(angleInput.value);
+                    
+                    if (!isNaN(time) && !isNaN(angle)) {
+                        rollChanges.push({ time: time, angle: angle });
+                    }
+                }
+            });
+            
+            // Sort by time
+            rollChanges.sort((a, b) => a.time - b.time);
+            
+            console.log('Updated roll changes:', rollChanges);
+        }
 
         // Get form data as object
         function getFormData() {
@@ -894,6 +1257,10 @@
             for (let [key, value] of formData.entries()) {
                 params[key] = parseFloat(value);
             }
+            
+            // Add roll changes
+            updateRollChangesArray();
+            params.rollChanges = rollChanges;
             
             return params;
         }
@@ -907,10 +1274,64 @@
                 }
             }
             
-            // Hide results sections
+            // Hide all results sections
             document.getElementById('results-section').style.display = 'none';
             document.getElementById('footprint-section').style.display = 'none';
+            document.getElementById('map-section').style.display = 'none';
             document.getElementById('error-section').style.display = 'none';
+
+            // Clear roll changes
+            rollChanges = [];
+            const container = document.getElementById('rollChangesContainer');
+            container.innerHTML = '';
+            rollChangeCounter = 0;
+            
+            // Hide advanced settings
+            const panel = document.getElementById('advancedSettingsPanel');
+            panel.style.display = 'none';
+            document.getElementById('advancedSettingsText').textContent = 'Show Advanced Settings';
+            document.getElementById('advancedSettingsIcon').textContent = '▼';
+            
+            // Hide trajectory map
+            document.getElementById('trajectory-map-section').style.display = 'none';
+            
+            // Clear trajectory map data
+            if (trajectoryMap) {
+                trajectoryLayers.forEach(layer => trajectoryMap.removeLayer(layer));
+                trajectoryLayers = [];
+                if (trajectoryStartMarker) {
+                    trajectoryMap.removeLayer(trajectoryStartMarker);
+                    trajectoryStartMarker = null;
+                }
+                if (trajectoryDirectionArrow) {
+                    trajectoryMap.removeLayer(trajectoryDirectionArrow);
+                    if (trajectoryDirectionArrow.arrowHead) {
+                        trajectoryMap.removeLayer(trajectoryDirectionArrow.arrowHead);
+                    }
+                    trajectoryDirectionArrow = null;
+                }
+            }
+            
+            // Clear stored data
+            currentResults = null;
+            currentFootprintData = null;
+            
+            // Clear map if it exists
+            if (map) {
+                footprintLayers.forEach(layer => map.removeLayer(layer));
+                footprintLayers = [];
+                if (startMarker) {
+                    map.removeLayer(startMarker);
+                    startMarker = null;
+                }
+                if (directionArrow) {
+                    map.removeLayer(directionArrow);
+                    if (directionArrow.arrowHead) {
+                        map.removeLayer(directionArrow.arrowHead);
+                    }
+                    directionArrow = null;
+                }
+            }
         }
 
         // Show loading indicator
@@ -934,11 +1355,10 @@
         }
 
         // Run main simulation
-        async function runSimulation(mode) {
+        async function runSimulation() {
             showLoading();
             try {
                 const params = getFormData();
-                params.mode = mode; // Add the mode (laminar or turbulent)
                 const response = await fetch('/simulate', {
                     method: 'POST',
                     headers: {
@@ -948,6 +1368,10 @@
                 });
                 const data = await response.json();
                 if (data.success) {
+                    if (!data.results || !data.results.range || data.results.range.length === 0) {
+                        showError("Simulation returned no data.");
+                        return;
+                    }
                     currentResults = data.results;
                     displayResults(data.results, data.plots);
                     document.getElementById('results-section').style.display = 'block';
@@ -957,6 +1381,106 @@
             } catch (error) {
                 showError('Network error: ' + error.message);
             }
+            hideLoading();
+        }
+
+        async function runCompleteSimulation() {
+            showLoading();
+            
+            try {
+                const params = getFormData();
+                
+                // Step 1: Run main simulation
+                console.log('Running main simulation...');
+                const simResponse = await fetch('/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+                const simData = await simResponse.json();
+                
+                if (!simData.success) {
+                    showError(simData.error || 'Simulation failed');
+                    return;
+                }
+                
+                if (!simData.results || !simData.results.range || simData.results.range.length === 0) {
+                    showError("Simulation returned no data.");
+                    return;
+                }
+                
+                currentResults = simData.results;
+                displayResults(simData.results, simData.plots);
+                document.getElementById('results-section').style.display = 'block';
+                
+                // Step 2: Calculate footprint
+                console.log('Calculating footprint...');
+                const footprintResponse = await fetch('/footprint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+                const footprintData = await footprintResponse.json();
+                
+                if (!footprintData.success) {
+                    showError(footprintData.error || 'Footprint calculation failed');
+                    return;
+                }
+                
+                currentFootprintData = footprintData.footprint_data;
+                displayFootprintResults(footprintData);
+                document.getElementById('footprint-section').style.display = 'block';
+                
+                // Step 3: Initialize map and project footprint
+                console.log('Initializing map and projecting footprint...');
+                document.getElementById('map-section').style.display = 'block';
+                
+                if (!map) {
+                    // Initialize map first, then project footprint
+                    setTimeout(async () => {
+                        initializeMap();
+                        // Set initial start location
+                        const startLat = parseFloat(document.getElementById('start-latitude').value);
+                        const startLng = parseFloat(document.getElementById('start-longitude').value);
+                        setStartLocation(startLat, startLng);
+                        
+                        // Auto-project footprint
+                        await projectFootprintOnMap();
+                    }, 100);
+                } else {
+                    // Map already exists, just project footprint
+                    await projectFootprintOnMap();
+                }
+
+                // Step 4: Show trajectory map if roll changes exist
+                if (rollChanges.length > 0) {
+                    console.log('Roll changes detected, showing trajectory map...');
+                    document.getElementById('trajectory-map-section').style.display = 'block';
+                    
+                    if (!trajectoryMap) {
+                        setTimeout(async () => {
+                            initializeTrajectoryMap();
+                            const startLat = parseFloat(document.getElementById('trajectory-start-latitude').value);
+                            const startLng = parseFloat(document.getElementById('trajectory-start-longitude').value);
+                            setTrajectoryStartLocation(startLat, startLng);
+                            await projectTrajectoryOnMap();
+                        }, 100);
+                    } else {
+                        await projectTrajectoryOnMap();
+                    }
+                }
+                
+                console.log('Complete simulation finished successfully');
+                
+            } catch (error) {
+                showError('Network error: ' + error.message);
+                console.error('Error in runCompleteSimulation:', error);
+            }
+            
             hideLoading();
         }
 
@@ -979,8 +1503,21 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    currentFootprintData = data.footprint_data;
                     displayFootprintResults(data);
                     document.getElementById('footprint-section').style.display = 'block';
+                    
+                    // Show map section and initialize if not done
+                    document.getElementById('map-section').style.display = 'block';
+                    if (!map) {
+                        setTimeout(() => {
+                            initializeMap();
+                            // Set initial start location
+                            const startLat = parseFloat(document.getElementById('start-latitude').value);
+                            const startLng = parseFloat(document.getElementById('start-longitude').value);
+                            setStartLocation(startLat, startLng);
+                        }, 100);
+                    }
                 } else {
                     showError(data.error || 'Footprint calculation failed');
                 }
@@ -1019,8 +1556,6 @@
             const finalRange = results.range[finalIndex];
             const finalCrossrange = results.crossrange[finalIndex];
             const flightTime = results.time[finalIndex];
-            const maxTemp1 = Math.max(...results.T1);
-            const maxTemp2 = Math.max(...results.T2);
             
             statsContainer.innerHTML = `
                 <div class="stats-grid">
@@ -1039,12 +1574,6 @@
                     <div class="stat-item">
                         <strong>Max Velocity:</strong> ${maxVelocity.toFixed(2)} km/s
                     </div>
-                    <div class="stat-item">
-                        <strong>Max Temp 1:</strong> ${maxTemp1.toFixed(0)} K
-                    </div>
-                    <div class="stat-item">
-                        <strong>Max Temp 2:</strong> ${maxTemp2.toFixed(0)} K
-                    </div>
                 </div>
             `;
         }
@@ -1062,18 +1591,6 @@
             
             createInteractivePlot('plot-crossrange-range', currentResults.range, currentResults.crossrange, 
                                 'Range (km)', 'Crossrange (km)', 'Cross Range vs Range');
-            
-            createInteractivePlot('plot-t1-range', currentResults.range, currentResults.T1, 
-                                'Range (km)', 'Temperature 1 (K)', 'Temperature 1 vs Range');
-            
-            createInteractivePlot('plot-t2-range', currentResults.range, currentResults.T2, 
-                                'Range (km)', 'Temperature 2 (K)', 'Temperature 2 vs Range');
-            
-            createInteractivePlot('plot-ir-dsp-range', currentResults.range, currentResults.IR_DSP, 
-                                'Range (km)', 'IR Intensity', 'DSP IR Intensity vs Range');
-            
-            createInteractivePlot('plot-ir-sbirs-range', currentResults.range, currentResults.IR_SBIRS, 
-                                'Range (km)', 'IR Intensity', 'SBIRS IR Intensity vs Range');
         }
 
         // Create interactive plot with crosshairs and tooltips
@@ -1143,11 +1660,7 @@
                     results.velocity[i].toFixed(3),
                     results.range[i].toFixed(3),
                     results.crossrange[i].toFixed(3),
-                    results.T1[i].toFixed(1),
-                    results.T2[i].toFixed(1),
-                    results.IR_SBIRS[i].toExponential(3),
-                    results.IR_DSP[i].toExponential(3),
-                    results.boundary_layer[i]
+                    // results.boundary_layer[i]
                 ];
                 
                 cells.forEach(cellData => {
@@ -1189,8 +1702,8 @@
             
             const headers = [
                 'Time (s)', 'Altitude (km)', 'Velocity (km/s)', 'Range (km)', 
-                'Crossrange (km)', 'Pathlength (km)', 'Gamma (deg)', 'Kappa (deg)',
-                'T_sp (K)', 'T1 (K)', 'T2 (K)', 'IR_SBIRS', 'IR_DSP', 'Boundary_Layer'
+                'Crossrange (km)', 'Pathlength (km)', 'Gamma (deg)', 'Kappa (deg)'
+                // Remove 'Boundary_Layer' from headers
             ];
             
             let csvContent = headers.join(',') + '\n';
@@ -1204,13 +1717,8 @@
                     currentResults.crossrange[i],
                     currentResults.pathlength[i],
                     currentResults.gamma_deg[i],
-                    currentResults.kappa_deg[i],
-                    currentResults.T_sp[i],
-                    currentResults.T1[i],
-                    currentResults.T2[i],
-                    currentResults.IR_SBIRS[i],
-                    currentResults.IR_DSP[i],
-                    currentResults.boundary_layer[i]
+                    currentResults.kappa_deg[i]
+                    // Remove currentResults.boundary_layer[i]
                 ];
                 csvContent += row.join(',') + '\n';
             }
@@ -1634,6 +2142,523 @@
             };
         }
 
+        // Initialize trajectory map
+        function initializeTrajectoryMap() {
+            if (trajectoryMap) {
+                trajectoryMap.remove();
+            }
+            
+            trajectoryMap = L.map('trajectory-map').setView([37.7749, -122.4194], 8);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(trajectoryMap);
+            
+            trajectoryMap.on('click', function(e) {
+                setTrajectoryStartLocation(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        // Set trajectory start location
+        function setTrajectoryStartLocation(lat, lng) {
+            document.getElementById('trajectory-start-latitude').value = lat.toFixed(6);
+            document.getElementById('trajectory-start-longitude').value = lng.toFixed(6);
+            
+            if (trajectoryStartMarker) {
+                trajectoryMap.removeLayer(trajectoryStartMarker);
+            }
+            
+            trajectoryStartMarker = L.marker([lat, lng], {
+                draggable: true,
+                title: 'Trajectory Start Location'
+            }).addTo(trajectoryMap);
+            
+            trajectoryStartMarker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                setTrajectoryStartLocation(position.lat, position.lng);
+            });
+            
+            updateTrajectoryDirection();
+        }
+
+        // Update trajectory start location from input
+        function updateTrajectoryStartLocation() {
+            const lat = parseFloat(document.getElementById('trajectory-start-latitude').value);
+            const lng = parseFloat(document.getElementById('trajectory-start-longitude').value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                setTrajectoryStartLocation(lat, lng);
+                if (trajectoryMap) {
+                    trajectoryMap.setView([lat, lng], trajectoryMap.getZoom());
+                }
+            }
+        }
+
+        // Update trajectory direction arrow
+        function updateTrajectoryDirection() {
+            if (!trajectoryStartMarker) return;
+            
+            const startPos = trajectoryStartMarker.getLatLng();
+            const direction = parseFloat(document.getElementById('trajectory-flight-direction').value);
+            
+            const endPos = calculateDestination(startPos.lat, startPos.lng, direction, 50);
+            
+            if (trajectoryDirectionArrow) {
+                trajectoryMap.removeLayer(trajectoryDirectionArrow);
+            }
+            
+            trajectoryDirectionArrow = L.polyline([
+                [startPos.lat, startPos.lng],
+                [endPos.lat, endPos.lng]
+            ], {
+                color: '#667eea',
+                weight: 4,
+                opacity: 0.8
+            }).addTo(trajectoryMap);
+            
+            const arrowHead = L.marker([endPos.lat, endPos.lng], {
+                icon: L.divIcon({
+                    html: '➤',
+                    iconSize: [20, 20],
+                    className: 'arrow-icon',
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(trajectoryMap);
+            
+            trajectoryDirectionArrow.arrowHead = arrowHead;
+        }
+
+        // Project trajectory on map
+        async function projectTrajectoryOnMap() {
+            if (!currentResults) {
+                alert('Please run simulation first before projecting trajectory.');
+                return;
+            }
+            
+            if (rollChanges.length === 0) {
+                alert('No roll angle changes defined. Add roll changes in Advanced Settings.');
+                return;
+            }
+            
+            console.log('Roll changes being applied:', rollChanges);
+            
+            // Add null checks for DOM elements
+            const startLatElement = document.getElementById('trajectory-start-latitude');
+            const startLngElement = document.getElementById('trajectory-start-longitude');
+            const flightDirectionElement = document.getElementById('trajectory-flight-direction');
+            
+            if (!startLatElement || !startLngElement || !flightDirectionElement) {
+                alert('Error: Required input elements not found. Please check that the trajectory input fields exist in your HTML.');
+                console.error('Missing elements:', {
+                    'trajectory-start-latitude': startLatElement,
+                    'trajectory-start-longitude': startLngElement,
+                    'trajectory-flight-direction': flightDirectionElement
+                });
+                return;
+            }
+            
+            const startLat = parseFloat(startLatElement.value);
+            const startLng = parseFloat(startLngElement.value);
+            const flightDirection = parseFloat(flightDirectionElement.value);
+            
+            if (isNaN(startLat) || isNaN(startLng) || isNaN(flightDirection)) {
+                alert('Please enter valid coordinates and flight direction.');
+                return;
+            }
+            
+            // Check if loading element exists
+            const loadingElement = document.getElementById('trajectory-map-loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'flex';
+            }
+            
+            try {
+                // Clear existing trajectory layers
+                if (typeof trajectoryLayers !== 'undefined' && trajectoryLayers.length > 0) {
+                    trajectoryLayers.forEach(layer => {
+                        if (trajectoryMap && trajectoryMap.hasLayer(layer)) {
+                            trajectoryMap.removeLayer(layer);
+                        }
+                    });
+                    trajectoryLayers = [];
+                }
+                
+                // **FIX: Re-run simulation with roll changes to get updated trajectory**
+                const simulationParams = getSimulationParameters();
+                simulationParams.rollChanges = rollChanges; // Include the roll changes
+                
+                console.log('Simulation parameters being sent:', simulationParams);
+                console.log('Roll changes in simulation params:', simulationParams.rollChanges);
+                
+                const response = await fetch('/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(simulationParams)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Simulation failed');
+                }
+                
+                // Use the NEW results that include roll changes
+                const trajectoryResults = data.results;
+                
+                console.log('Trajectory results received:', {
+                    rangePoints: trajectoryResults.range.length,
+                    crossrangePoints: trajectoryResults.crossrange.length,
+                    timePoints: trajectoryResults.time.length,
+                    maxCrossrange: Math.max(...trajectoryResults.crossrange),
+                    minCrossrange: Math.min(...trajectoryResults.crossrange)
+                });
+                
+                // Check if trajectoryMap exists
+                if (typeof trajectoryMap === 'undefined' || !trajectoryMap) {
+                    throw new Error('Trajectory map not initialized');
+                }
+                
+                // Create trajectory path from NEW simulation results
+                const trajectoryPoints = [];
+                const rollChangePoints = [];
+                
+                // Sort roll changes by time for easier processing
+                const sortedRollChanges = [...rollChanges].sort((a, b) => a.time - b.time);
+                
+                for (let i = 0; i < trajectoryResults.range.length; i++) {
+                    const range = trajectoryResults.range[i];
+                    const crossrange = trajectoryResults.crossrange[i];
+                    const time = trajectoryResults.time[i];
+                    
+                    // Calculate position along flight path
+                    const flightPathPoint = calculateDestination(startLat, startLng, flightDirection, range);
+                    
+                    // Apply crossrange offset
+                    if (Math.abs(crossrange) < 0.001) {
+                        trajectoryPoints.push([flightPathPoint.lat, flightPathPoint.lng]);
+                    } else {
+                        const perpBearing = crossrange > 0 ? 
+                            (flightDirection + 90) % 360 : 
+                            (flightDirection - 90 + 360) % 360;
+                        
+                        const projectedPoint = calculateDestination(
+                            flightPathPoint.lat, flightPathPoint.lng, 
+                            perpBearing, Math.abs(crossrange)
+                        );
+                        
+                        trajectoryPoints.push([projectedPoint.lat, projectedPoint.lng]);
+                    }
+                }
+                
+                // **FIXED: Find roll change points using interpolation**
+                // Instead of looking for exact time matches, interpolate to find the closest trajectory points
+                for (const rollChange of sortedRollChanges) {
+                    const targetTime = rollChange.time;
+                    
+                    // Find the closest time points in the trajectory
+                    let closestIndex = 0;
+                    let minTimeDiff = Math.abs(trajectoryResults.time[0] - targetTime);
+                    
+                    for (let i = 1; i < trajectoryResults.time.length; i++) {
+                        const timeDiff = Math.abs(trajectoryResults.time[i] - targetTime);
+                        if (timeDiff < minTimeDiff) {
+                            minTimeDiff = timeDiff;
+                            closestIndex = i;
+                        }
+                    }
+                    
+                    // If we found a reasonably close point (within 30 seconds), mark it
+                    if (minTimeDiff < 30) {
+                        rollChangePoints.push({
+                            point: trajectoryPoints[closestIndex],
+                            time: rollChange.time,
+                            angle: rollChange.angle,
+                            actualTime: trajectoryResults.time[closestIndex],
+                            timeDiff: minTimeDiff
+                        });
+                        
+                        console.log(`Roll change at ${rollChange.time}s mapped to trajectory point at ${trajectoryResults.time[closestIndex]}s (diff: ${minTimeDiff.toFixed(1)}s)`);
+                    } else {
+                        console.warn(`Roll change at ${rollChange.time}s is too far from any trajectory point (closest: ${minTimeDiff.toFixed(1)}s)`);
+                    }
+                }
+                
+                console.log('Trajectory points generated:', trajectoryPoints.length);
+                console.log('Roll change points found:', rollChangePoints.length);
+                
+                // Initialize trajectoryLayers if not exists
+                if (typeof trajectoryLayers === 'undefined') {
+                    trajectoryLayers = [];
+                }
+                
+                // Add trajectory path to map
+                if (trajectoryPoints.length > 0) {
+                    const trajectoryPath = L.polyline(trajectoryPoints, {
+                        color: '#ff4444',
+                        weight: 4,
+                        opacity: 0.8
+                    }).addTo(trajectoryMap);
+                    
+                    trajectoryPath.bindTooltip('Flight Trajectory (with Roll Changes)');
+                    trajectoryLayers.push(trajectoryPath);
+                }
+                
+                // Add roll change points
+                rollChangePoints.forEach(point => {
+                    const marker = L.circleMarker(point.point, {
+                        color: '#44ff44',
+                        fillColor: '#44ff44',
+                        fillOpacity: 0.8,
+                        radius: 8,
+                        weight: 2
+                    }).addTo(trajectoryMap);
+                    
+                    marker.bindTooltip(`Planned: ${point.time}s<br>Actual: ${point.actualTime.toFixed(1)}s<br>Roll: ${point.angle}°`);
+                    trajectoryLayers.push(marker);
+                });
+                
+                // Fit map to show trajectory
+                if (trajectoryLayers.length > 0) {
+                    const group = new L.featureGroup(trajectoryLayers);
+                    trajectoryMap.fitBounds(group.getBounds().pad(0.1));
+                }
+                
+                console.log('Trajectory projection completed with roll changes');
+                
+            } catch (error) {
+                console.error('Error projecting trajectory:', error);
+                alert('Error projecting trajectory: ' + error.message);
+            }
+            
+            // Hide loading element
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        // Helper function to get current simulation parameters
+        function getSimulationParameters() {
+            // Add null checks for all simulation parameter elements using correct IDs
+            const elements = {
+                'v0': document.getElementById('v0'),
+                'rolld0': document.getElementById('rolld0'),
+                'gammad0': document.getElementById('gammad0'),
+                'kappad0': document.getElementById('kappad0'),
+                'payload': document.getElementById('payload'),
+                'beta': document.getElementById('beta'),
+                'LtoD': document.getElementById('LtoD')
+            };
+            
+            // Check if any elements are missing
+            const missingElements = Object.keys(elements).filter(key => !elements[key]);
+            if (missingElements.length > 0) {
+                console.error('Missing simulation parameter elements:', missingElements);
+                throw new Error(`Missing required elements: ${missingElements.join(', ')}`);
+            }
+            
+            return {
+                v0: parseFloat(elements['v0'].value) || 0,
+                rolld0: parseFloat(elements['rolld0'].value) || 0,
+                gammad0: parseFloat(elements['gammad0'].value) || 0,
+                kappad0: parseFloat(elements['kappad0'].value) || 0,
+                payload: parseFloat(elements['payload'].value) || 0,
+                beta: parseFloat(elements['beta'].value) || 0,
+                LtoD: parseFloat(elements['LtoD'].value) || 0,
+                r0: 0,   
+                cr0: 0,  
+                t0: 0    
+            };
+        }
+
+        // Helper function to check if required elements exist
+        function checkRequiredElements() {
+            const requiredElements = [
+                'trajectory-start-latitude',
+                'trajectory-start-longitude',
+                'trajectory-flight-direction',
+                'trajectory-map-loading',
+                'v0',
+                'rolld0',
+                'gammad0',
+                'kappad0',
+                'payload',
+                'beta',
+                'LtoD'
+            ];
+            
+            const missingElements = [];
+            
+            requiredElements.forEach(id => {
+                if (!document.getElementById(id)) {
+                    missingElements.push(id);
+                }
+            });
+            
+            if (missingElements.length > 0) {
+                console.error('Missing required HTML elements:', missingElements);
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Function to initialize trajectory projection (call this after DOM is loaded)
+        function initializeTrajectoryProjection() {
+            if (!checkRequiredElements()) {
+                console.error('Cannot initialize trajectory projection: missing required elements');
+                return false;
+            }
+            
+            // Initialize variables if they don't exist
+            if (typeof trajectoryLayers === 'undefined') {
+                window.trajectoryLayers = [];
+            }
+            
+            if (typeof rollChanges === 'undefined') {
+                window.rollChanges = [];
+            }
+            
+            return true;
+        }
+
+        function debugRollChanges() {
+            console.log('Current roll changes:', rollChanges);
+            console.log('Roll changes length:', rollChanges.length);
+            
+            if (rollChanges.length > 0) {
+                rollChanges.forEach((change, index) => {
+                    console.log(`Roll change ${index}:`, {
+                        time: change.time,
+                        angle: change.angle,
+                        timeType: typeof change.time,
+                        angleType: typeof change.angle
+                    });
+                });
+            }
+        }
+
+        debugRollChanges();
+
+        // Function to manually add a test roll change
+        function addTestRollChange() {
+            if (typeof rollChanges === 'undefined') {
+                window.rollChanges = [];
+            }
+            
+            const testChange = {
+                time: 60,
+                angle: 90
+            };
+            
+            rollChanges.push(testChange);
+            console.log('Added test roll change:', testChange);
+            console.log('Current roll changes:', rollChanges);
+            
+            return testChange;
+        }
+
+        // Function to verify roll changes are being sent to server
+        function testSimulationWithRollChanges() {
+            const simulationParams = getSimulationParameters();
+            simulationParams.rollChanges = rollChanges;
+            
+            console.log('Test simulation parameters:', simulationParams);
+            console.log('Roll changes in params:', simulationParams.rollChanges);
+            
+            // Log the JSON that would be sent to server
+            console.log('JSON to be sent to server:', JSON.stringify(simulationParams, null, 2));
+        }
+
+        // Function to compare trajectories with and without roll changes
+        async function compareTrajectories() {
+            if (!currentResults) {
+                console.error('No current results available');
+                return;
+            }
+            
+            console.log('Original trajectory (without roll changes):');
+            console.log('Max crossrange:', Math.max(...currentResults.crossrange));
+            console.log('Min crossrange:', Math.min(...currentResults.crossrange));
+            console.log('Crossrange at end:', currentResults.crossrange[currentResults.crossrange.length - 1]);
+            
+            // Now test with roll changes
+            if (rollChanges.length > 0) {
+                try {
+                    const simulationParams = getSimulationParameters();
+                    simulationParams.rollChanges = rollChanges;
+                    
+                    const response = await fetch('/simulate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(simulationParams)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.error || 'Simulation failed');
+                    }
+                    
+                    console.log('New trajectory (with roll changes):');
+                    console.log('Max crossrange:', Math.max(...data.results.crossrange));
+                    console.log('Min crossrange:', Math.min(...data.results.crossrange));
+                    console.log('Crossrange at end:', data.results.crossrange[data.results.crossrange.length - 1]);
+                    
+                } catch (error) {
+                    console.error('Error in trajectory comparison:', error);
+                }
+            }
+        }
+
+        // Function to check if server is processing roll changes
+        function checkServerRollProcessing() {
+            console.log('Checking server roll change processing...');
+            
+            // Check if the server endpoint exists and responds
+            fetch('/simulate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    v0: 3.5,
+                    rolld0: 0,
+                    gammad0: 0,
+                    kappad0: 0,
+                    payload: 1000,
+                    beta: 4680,
+                    LtoD: 2.6,
+                    r0: 0,
+                    cr0: 0,
+                    t0: 0,
+                    rollChanges: [{time: 60, angle: 90}]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server response to roll changes test:', data);
+                if (data.success) {
+                    console.log('Server processed roll changes successfully');
+                } else {
+                    console.error('Server failed to process roll changes:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error testing server roll processing:', error);
+            });
+        }
         
         async function calculateFootprint() {
             showLoading();
@@ -1674,14 +2699,16 @@
 
         // Add event listeners for map functionality
         document.addEventListener('DOMContentLoaded', function() {
+            initializeTrajectoryProjection();
             // Existing event listeners...
-            document.getElementById('laminarBtn').addEventListener('click', function() {
-                runSimulation('laminar');
-            });
-            document.getElementById('turbulentBtn').addEventListener('click', function() {
-                runSimulation('turbulent');
-            });
-            document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
+            // document.getElementById('laminarBtn').addEventListener('click', function() {
+            //     runSimulation();
+            // });
+            // document.getElementById('turbulentBtn').addEventListener('click', function() {
+            //     runSimulation();
+            // });
+            // document.getElementById('footprintBtn').addEventListener('click', calculateFootprint);
+            document.getElementById('runSimulationBtn').addEventListener('click', runCompleteSimulation);
             document.getElementById('resetBtn').addEventListener('click', resetParameters);
             document.getElementById('exportBtn').addEventListener('click', exportToCSV);
             

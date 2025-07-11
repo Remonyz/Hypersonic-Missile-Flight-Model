@@ -347,8 +347,13 @@ class HypersonicGlideSimulator:
             'hull': hull.vertices.tolist() if hull else None
         }
 
-    def simulate(self, params, mode=None):
+    def simulate(self, params):
         """Main simulation function"""
+        # Force initial conditions to zero
+        params['r0'] = 0      # Initial range always 0
+        params['cr0'] = 0     # Initial crossrange always 0  
+        params['t0'] = 0      # Initial time always 0
+
         # Extract parameters
         v0 = params['v0'] * 1000  # Convert km/s to m/s
         rolld0 = params['rolld0']
@@ -360,13 +365,20 @@ class HypersonicGlideSimulator:
         payload = params['payload']
         beta = params['beta']
         LtoD = params['LtoD']
-        emis = params['emis']
-        distance1 = params['distance1']
-        distance2 = params['distance2']
-        lam1 = params['lam1'] * 1e-6  # Convert um to m
-        lam2 = params['lam2'] * 1e-6
-        lam3 = params['lam3'] * 1e-6
-        lam4 = params['lam4'] * 1e-6
+        # emis = params['emis']
+        # distance1 = params['distance1']
+        # distance2 = params['distance2']
+        # lam1 = params['lam1'] * 1e-6  # Convert um to m
+        # lam2 = params['lam2'] * 1e-6
+        # lam3 = params['lam3'] * 1e-6
+        # lam4 = params['lam4'] * 1e-6
+
+        roll_changes = params.get('rollChanges', [])
+        roll_changes_dict = {}
+        if roll_changes:
+            for change in roll_changes:
+                roll_changes_dict[change['time']] = change['angle'] * np.pi / 180  # Convert to radians
+            print(f"Roll changes loaded: {roll_changes_dict}")
         
         # Vehicle geometry
         noserad = 0.034
@@ -388,22 +400,22 @@ class HypersonicGlideSimulator:
         phi2rad = (phi2 * np.pi) / 180
         
         # Heating coefficients 
-        Csp = 0.000183 / (noserad ** 0.5)           # for stagnation point
+        # Csp = 0.000183 / (noserad ** 0.5)           # for stagnation point
         
-        Cphi1 = np.cos(phi1rad)
-        Sphi1 = np.sin(phi1rad)
-        Cphi2 = np.cos(phi2rad)
-        Sphi2 = np.sin(phi2rad)
+        # Cphi1 = np.cos(phi1rad)
+        # Sphi1 = np.sin(phi1rad)
+        # Cphi2 = np.cos(phi2rad)
+        # Sphi2 = np.sin(phi2rad)
         
-        # Laminar coefficients
-        Clam1 = 0.0000253 * (Cphi1 ** 0.5) * (Sphi1) / (distance1 ** 0.5)
-        Clam2 = 0.0000253 * (Cphi2 ** 0.5) * (Sphi2) / (distance2 ** 0.5)
+        # # Laminar coefficients
+        # Clam1 = 0.0000253 * (Cphi1 ** 0.5) * (Sphi1) / (distance1 ** 0.5)
+        # Clam2 = 0.0000253 * (Cphi2 ** 0.5) * (Sphi2) / (distance2 ** 0.5)
         
-        # Turbulent coefficients
-        Cthv1 = 0.000022 * (Cphi1 ** 2.08) * (Sphi1 ** 1.6) / (distance1 ** 0.2)
-        Cthv2 = 0.000022 * (Cphi2 ** 2.08) * (Sphi2 ** 1.6) / (distance2 ** 0.2)
-        Ctlv1 = 0.000389 * (Cphi1 ** 1.78) * (Sphi1 ** 1.6) / (distance1 ** 0.2)
-        Ctlv2 = 0.000389 * (Cphi2 ** 1.78) * (Sphi2 ** 1.6) / (distance2 ** 0.2)
+        # # Turbulent coefficients
+        # Cthv1 = 0.000022 * (Cphi1 ** 2.08) * (Sphi1 ** 1.6) / (distance1 ** 0.2)
+        # Cthv2 = 0.000022 * (Cphi2 ** 2.08) * (Sphi2 ** 1.6) / (distance2 ** 0.2)
+        # Ctlv1 = 0.000389 * (Cphi1 ** 1.78) * (Sphi1 ** 1.6) / (distance1 ** 0.2)
+        # Ctlv2 = 0.000389 * (Cphi2 ** 1.78) * (Sphi2 ** 1.6) / (distance2 ** 0.2)
 
         
         # Initialize variables
@@ -421,10 +433,10 @@ class HypersonicGlideSimulator:
         h = max(1000, h0)  # Ensure reasonable starting altitude
         h = self.eq_alt(v, h, LtoD, coeff)
         
-        # Initial temperatures
-        Tsp = 3500
-        Tw1 = 2100
-        Tw2 = 1700
+        # # Initial temperatures
+        # Tsp = 3500
+        # Tw1 = 2100
+        # Tw2 = 1700
         
         # Integration parameters
         deltat = 0.1
@@ -442,12 +454,7 @@ class HypersonicGlideSimulator:
             'pathlength': [],
             'gamma_deg': [],
             'kappa_deg': [],
-            'T_sp': [],
-            'T1': [],
-            'T2': [],
-            'IR_SBIRS': [],
-            'IR_DSP': [],
-            'boundary_layer': []  # Track laminar vs turbulent
+            'roll_deg': []
         }
         
         # Critical Reynolds number for transition
@@ -460,6 +467,21 @@ class HypersonicGlideSimulator:
         
         while t <= tEND and psi * self.Rearth <= maxrange and h > 0 and step_count < max_steps:
             step_count += 1
+
+            # Check for roll angle changes at current time
+            if roll_changes_dict:
+                # Find the most recent roll change that should be active
+                active_roll = roll0  # Default to initial roll
+                for change_time in sorted(roll_changes_dict.keys()):
+                    if t >= change_time:
+                        active_roll = roll_changes_dict[change_time]
+                    else:
+                        break
+                
+                # Only update if different from current roll
+                if abs(roll - active_roll) > 1e-6:  # Small tolerance for floating point comparison
+                    roll = active_roll
+                    print(f"Roll angle changed to {roll * 180 / np.pi:.1f}° at time {t:.1f}s")
             
             rho = self.density(h)
             
@@ -545,89 +567,7 @@ class HypersonicGlideSimulator:
             
             # Store results at print intervals
             if (t + (deltat / 2)) >= tprint:
-                # Calculate Reynolds number to determine boundary layer type
-                Re1 = self.reynolds_number(rho, v, distance1)
-                Re2 = self.reynolds_number(rho, v, distance2)
                 
-                # Determine boundary layer type
-                if mode == "laminar":
-                    is_turbulent_1 = False
-                    is_turbulent_2 = False
-                elif mode == "turbulent":
-                    is_turbulent_1 = True
-                    is_turbulent_2 = True
-                else:
-                    is_turbulent_1 = Re1 > Re_critical
-                    is_turbulent_2 = Re2 > Re_critical
-
-                
-                # Calculate heating 
-                enth0 = (0.5 * (v ** 2)) + 0.000023
-                
-                enthSP = 1000 * Tsp
-                enthratioSP = enthSP / enth0
-                
-                enthW1 = 1000 * Tw1
-                enthratioW1 = enthW1 / enth0
-                
-                enthW2 = 1000 * Tw2
-                enthratioW2 = enthW2 / enth0
-                
-                qSP = Csp * (rho ** 0.5) * (v ** 3) * (1 - enthratioSP)
-                
-                # Select heating equations based on boundary layer type and velocity
-                if is_turbulent_1:
-                    if v > 4000:  # High speed turbulent equations (v > 4km/s)
-                        qWALL1 = Cthv1 * (rho ** 0.8) * (v ** 3.7) * (1 - (1.11 * enthratioW1))
-                    else:  # Low speed turbulent equations (v <= 4km/s)
-                        qWALL1 = Ctlv1 * (rho ** 0.8) * (v ** 3.37) * (1 - (1.11 * enthratioW1)) * ((556 / Tw1) ** 0.25)
-                else:
-                    # Laminar flow equations
-                    qWALL1 = Clam1 * (rho ** 0.5) * (v ** 3.2) * (1 - (enthratioW1))
-                
-                if is_turbulent_2:
-                    if v > 4000:  # High speed turbulent equations (v > 4km/s)
-                        qWall2 = Cthv2 * (rho ** 0.8) * (v ** 3.7) * (1 - (1.11 * enthratioW2))
-                    else:  # Low speed turbulent equations (v <= 4km/s)
-                        qWall2 = Ctlv2 * (rho ** 0.8) * (v ** 3.37) * (1 - (1.11 * enthratioW2)) * ((556 / Tw2) ** 0.25)
-                else:
-                    # Laminar flow equations
-                    qWall2 = Clam2 * (rho ** 0.5) * (v ** 3.2) * (1 - (enthratioW2))
-                
-                IR_SBIRS = 0
-                IR_DSP = 0
-                
-                if qSP > 0 and qWALL1 > 0 and qWall2 > 0:
-                    # Calculate wall temperatures using Stefan-Boltzmann
-                    Tsp = (qSP / (emis * self.sigma)) ** 0.25
-                    Tw1 = (qWALL1 / (emis * self.sigma)) ** 0.25
-                    Tw2 = (qWall2 / (emis * self.sigma)) ** 0.25
-                    
-                    # Calculate IR emission - simplified for performance
-                    # Full integration would be too computationally expensive for web app
-                    try:
-                        # Approximate IR emission using Stefan-Boltzmann law
-                        # This is a simplification of the full Planck integration
-                        area_front = np.pi * len1 * noserad * 2  # Approximate surface area
-                        area_rear = np.pi * (len2 - len1) * noserad * 2.2
-                        
-                        # Simplified spectral radiance calculation
-                        T1_eff = Tw1 * ((distance1 / 1.0) ** -0.05)  # Distance scaling
-                        T2_eff = Tw2 * (((len1 + distance2) / 3.5) ** -0.05)
-                        
-                        # Stefan-Boltzmann approximation for spectral bands
-                        # This is much faster than full Planck integration
-                        IR_SBIRS = emis * self.sigma * (T1_eff ** 4) * area_front * 0.001  # Convert to kW/sr
-                        IR_DSP = emis * self.sigma * (T2_eff ** 4) * area_rear * 0.001
-                        
-                    except Exception as e:
-                        IR_SBIRS = 0
-                        IR_DSP = 0
-                
-                # Determine overall boundary layer state for tracking
-                boundary_layer_state = "Turbulent" if (is_turbulent_1 or is_turbulent_2) else "Laminar"
-                
-                # Store results
                 results['time'].append(t)
                 results['altitude'].append(h / 1000)  # Convert to km
                 results['velocity'].append(v / 1000)  # Convert to km/s
@@ -636,37 +576,34 @@ class HypersonicGlideSimulator:
                 results['pathlength'].append(pathlength / 1000)  # Convert to km
                 results['gamma_deg'].append(gamma * 180 / np.pi)  # Convert to degrees
                 results['kappa_deg'].append(kappa * 180 / np.pi)  # Convert to degrees
-                results['T_sp'].append(Tsp)
-                results['T1'].append(Tw1)
-                results['T2'].append(Tw2)
-                results['IR_SBIRS'].append(IR_SBIRS)
-                results['IR_DSP'].append(IR_DSP)
-                results['boundary_layer'].append(boundary_layer_state)
+                results['roll_deg'] = getattr(results, 'roll_deg', [])  # Initialize if not exists
+                results['roll_deg'].append(roll * 180 / np.pi)  # Convert to degrees
+
                 
                 tprint = tprint + dtprint
         
         return results
 
-    def reynolds_number(self, rho, v, L):
-        """Calculate Reynolds number for boundary layer transition"""
-        # Dynamic viscosity calculation using Sutherland's law
-        # This is a simplified approach for hypersonic flow
-        T_ref = 273.15  # Reference temperature (K)
-        mu_ref = 1.716e-5  # Reference dynamic viscosity (Pa⋅s)
-        S = 110.4  # Sutherland constant (K)
+    # def reynolds_number(self, rho, v, L):
+    #     """Calculate Reynolds number for boundary layer transition"""
+    #     # Dynamic viscosity calculation using Sutherland's law
+    #     # This is a simplified approach for hypersonic flow
+    #     T_ref = 273.15  # Reference temperature (K)
+    #     mu_ref = 1.716e-5  # Reference dynamic viscosity (Pa⋅s)
+    #     S = 110.4  # Sutherland constant (K)
         
-        # Approximate temperature from altitude (simplified)
-        if rho > 0:
-            T = max(200, 288.15 - 0.0065 * (6370000 - self.Rearth))  # Rough approximation
-        else:
-            T = 200
+    #     # Approximate temperature from altitude (simplified)
+    #     if rho > 0:
+    #         T = max(200, 288.15 - 0.0065 * (6370000 - self.Rearth))  # Rough approximation
+    #     else:
+    #         T = 200
         
-        # Sutherland's law for dynamic viscosity
-        mu = mu_ref * ((T / T_ref) ** 1.5) * ((T_ref + S) / (T + S))
+    #     # Sutherland's law for dynamic viscosity
+    #     mu = mu_ref * ((T / T_ref) ** 1.5) * ((T_ref + S) / (T + S))
         
-        # Reynolds number
-        Re = (rho * v * L) / mu
-        return Re
+    #     # Reynolds number
+    #     Re = (rho * v * L) / mu
+    #     return Re
   
 
 # Flask routes
@@ -681,8 +618,14 @@ def simulate():
         simulator = HypersonicGlideSimulator()
         
         # Run simulation
-        mode = data.get('mode', None)
-        results = simulator.simulate(data, mode=mode)
+        results = simulator.simulate(data)
+        
+        # Validate results
+        if not results.get('range') or len(results['range']) == 0:
+            return jsonify({
+                'success': False,
+                'error': 'Simulation returned no data.'
+            })
         
         # Generate plots
         plots = generate_plots(results)
@@ -840,65 +783,65 @@ def generate_plots(results):
         plots['crossrange_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
         plt.close()
         
-        # Plot 5: Temperature 1 vs Range
-        plt.figure(figsize=(10, 6))
-        plt.plot(results['range'], results['T1'], 'orange', linewidth=2)
-        plt.xlabel('Range (km)', fontsize=12)
-        plt.ylabel('Temperature (K)', fontsize=12)
-        plt.title('Temperature 1 vs Range', fontsize=14, fontweight='bold')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
+        # # Plot 5: Temperature 1 vs Range
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(results['range'], results['T1'], 'orange', linewidth=2)
+        # plt.xlabel('Range (km)', fontsize=12)
+        # plt.ylabel('Temperature (K)', fontsize=12)
+        # plt.title('Temperature 1 vs Range', fontsize=14, fontweight='bold')
+        # plt.grid(True, alpha=0.3)
+        # plt.tight_layout()
         
-        img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        img_buffer.seek(0)
-        plots['T1_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        plt.close()
+        # img_buffer = io.BytesIO()
+        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        # img_buffer.seek(0)
+        # plots['T1_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        # plt.close()
         
-        # Plot 6: Temperature 2 vs Range
-        plt.figure(figsize=(10, 6))
-        plt.plot(results['range'], results['T2'], 'brown', linewidth=2)
-        plt.xlabel('Range (km)', fontsize=12)
-        plt.ylabel('Temperature (K)', fontsize=12)
-        plt.title('Temperature 2 vs Range', fontsize=14, fontweight='bold')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
+        # # Plot 6: Temperature 2 vs Range
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(results['range'], results['T2'], 'brown', linewidth=2)
+        # plt.xlabel('Range (km)', fontsize=12)
+        # plt.ylabel('Temperature (K)', fontsize=12)
+        # plt.title('Temperature 2 vs Range', fontsize=14, fontweight='bold')
+        # plt.grid(True, alpha=0.3)
+        # plt.tight_layout()
         
-        img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        img_buffer.seek(0)
-        plots['T2_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        plt.close()
+        # img_buffer = io.BytesIO()
+        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        # img_buffer.seek(0)
+        # plots['T2_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        # plt.close()
         
-        # Plot 7: IR DSP vs Range
-        plt.figure(figsize=(10, 6))
-        plt.plot(results['range'], results['IR_DSP'], 'purple', linewidth=2)
-        plt.xlabel('Range (km)', fontsize=12)
-        plt.ylabel('IR Intensity (W/m²)', fontsize=12)
-        plt.title('DSP IR Intensity vs Range', fontsize=14, fontweight='bold')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
+        # # Plot 7: IR DSP vs Range
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(results['range'], results['IR_DSP'], 'purple', linewidth=2)
+        # plt.xlabel('Range (km)', fontsize=12)
+        # plt.ylabel('IR Intensity (W/m²)', fontsize=12)
+        # plt.title('DSP IR Intensity vs Range', fontsize=14, fontweight='bold')
+        # plt.grid(True, alpha=0.3)
+        # plt.tight_layout()
         
-        img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        img_buffer.seek(0)
-        plots['IR_DSP_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        plt.close()
+        # img_buffer = io.BytesIO()
+        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        # img_buffer.seek(0)
+        # plots['IR_DSP_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        # plt.close()
         
-        # Plot 8: IR SBIRS vs Range
-        plt.figure(figsize=(10, 6))
-        plt.plot(results['range'], results['IR_SBIRS'], 'cyan', linewidth=2)
-        plt.xlabel('Range (km)', fontsize=12)
-        plt.ylabel('IR Intensity (W/m²)', fontsize=12)
-        plt.title('SBIRS IR Intensity vs Range', fontsize=14, fontweight='bold')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
+        # # Plot 8: IR SBIRS vs Range
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(results['range'], results['IR_SBIRS'], 'cyan', linewidth=2)
+        # plt.xlabel('Range (km)', fontsize=12)
+        # plt.ylabel('IR Intensity (W/m²)', fontsize=12)
+        # plt.title('SBIRS IR Intensity vs Range', fontsize=14, fontweight='bold')
+        # plt.grid(True, alpha=0.3)
+        # plt.tight_layout()
         
-        img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        img_buffer.seek(0)
-        plots['IR_SBIRS_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        plt.close()
+        # img_buffer = io.BytesIO()
+        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        # img_buffer.seek(0)
+        # plots['IR_SBIRS_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        # plt.close()
         
     except Exception as e:
         print(f"Error generating plots: {e}")
