@@ -272,7 +272,7 @@ class HypersonicGlideSimulator:
         """Calculate the footprint area by varying roll angle"""
         # Roll angles to test - include both positive and negative for full footprint
         positive_angles = np.linspace(0, 90, 10)  # 10 angles from 0 to 90
-        negative_angles = np.linspace(-90, -5, 9)  # 9 angles from -90 to -5 (skip 0 to avoid duplicate)
+        negative_angles = -np.linspace(0, 90, 10)[1:]  
         roll_angles = np.concatenate([negative_angles, positive_angles])
         
         print(f"Calculating footprint for roll angles: {roll_angles}")
@@ -716,8 +716,15 @@ def calculate_footprint():
         }), 500
 
 def generate_plots(results):
-    """Generate all simulation plots"""
+    """Generate all simulation plots with working borders"""
     plots = {}
+    
+    def add_border(ax, color='black', width=2):
+        """Helper function to add borders consistently"""
+        for spine in ax.spines.values():
+            spine.set_visible(True)  # This was likely missing!
+            spine.set_linewidth(width)
+            spine.set_color(color)
     
     try:
         # Set up the plotting style
@@ -730,12 +737,21 @@ def generate_plots(results):
         plt.ylabel('Altitude (km)', fontsize=12)
         plt.title('Altitude vs Range', fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
+        plt.xlim(left=0, right=max(results['range']) * 1.05)
+        
+        # Add border - using helper function
+        ax = plt.gca()
+        add_border(ax, color='red', width=3)  # Use red first to make sure it's visible
+        
         plt.tight_layout()
         
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format='png', dpi=150)
         img_buffer.seek(0)
         plots['altitude_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        # Also save directly to file for testing
+        plt.savefig('altitude_vs_range_test.png', dpi=150)
         plt.close()
         
         # Plot 2: Velocity vs Range
@@ -745,12 +761,21 @@ def generate_plots(results):
         plt.ylabel('Velocity (km/s)', fontsize=12)
         plt.title('Velocity vs Range', fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
+        plt.xlim(left=0, right=max(results['range']) * 1.05)
+        
+        # Add border
+        ax = plt.gca()
+        add_border(ax, color='blue', width=3)
+        
         plt.tight_layout()
         
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format='png', dpi=150)
         img_buffer.seek(0)
         plots['velocity_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        # Also save directly to file for testing
+        plt.savefig('velocity_vs_range_test.png', dpi=150)
         plt.close()
         
         # Plot 3: Time vs Range
@@ -760,12 +785,21 @@ def generate_plots(results):
         plt.ylabel('Time (s)', fontsize=12)
         plt.title('Flight Time vs Range', fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
+        plt.xlim(left=0, right=max(results['range']) * 1.05)
+        
+        # Add border
+        ax = plt.gca()
+        add_border(ax, color='green', width=3)
+        
         plt.tight_layout()
         
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format='png', dpi=150)
         img_buffer.seek(0)
         plots['time_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        # Also save directly to file for testing
+        plt.savefig('time_vs_range_test.png', dpi=150)
         plt.close()
         
         # Plot 4: Crossrange vs Range
@@ -775,73 +809,28 @@ def generate_plots(results):
         plt.ylabel('Crossrange (km)', fontsize=12)
         plt.title('Cross Range vs Range', fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
+        plt.xlim(left=0, right=max(results['range']) * 1.05)
+        
+        # Add border
+        ax = plt.gca()
+        add_border(ax, color='purple', width=3)
+        
         plt.tight_layout()
         
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format='png', dpi=150)
         img_buffer.seek(0)
         plots['crossrange_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        # Also save directly to file for testing
+        plt.savefig('crossrange_vs_range_test.png', dpi=150)
         plt.close()
         
-        # # Plot 5: Temperature 1 vs Range
-        # plt.figure(figsize=(10, 6))
-        # plt.plot(results['range'], results['T1'], 'orange', linewidth=2)
-        # plt.xlabel('Range (km)', fontsize=12)
-        # plt.ylabel('Temperature (K)', fontsize=12)
-        # plt.title('Temperature 1 vs Range', fontsize=14, fontweight='bold')
-        # plt.grid(True, alpha=0.3)
-        # plt.tight_layout()
-        
-        # img_buffer = io.BytesIO()
-        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        # img_buffer.seek(0)
-        # plots['T1_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        # plt.close()
-        
-        # # Plot 6: Temperature 2 vs Range
-        # plt.figure(figsize=(10, 6))
-        # plt.plot(results['range'], results['T2'], 'brown', linewidth=2)
-        # plt.xlabel('Range (km)', fontsize=12)
-        # plt.ylabel('Temperature (K)', fontsize=12)
-        # plt.title('Temperature 2 vs Range', fontsize=14, fontweight='bold')
-        # plt.grid(True, alpha=0.3)
-        # plt.tight_layout()
-        
-        # img_buffer = io.BytesIO()
-        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        # img_buffer.seek(0)
-        # plots['T2_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        # plt.close()
-        
-        # # Plot 7: IR DSP vs Range
-        # plt.figure(figsize=(10, 6))
-        # plt.plot(results['range'], results['IR_DSP'], 'purple', linewidth=2)
-        # plt.xlabel('Range (km)', fontsize=12)
-        # plt.ylabel('IR Intensity (W/m²)', fontsize=12)
-        # plt.title('DSP IR Intensity vs Range', fontsize=14, fontweight='bold')
-        # plt.grid(True, alpha=0.3)
-        # plt.tight_layout()
-        
-        # img_buffer = io.BytesIO()
-        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        # img_buffer.seek(0)
-        # plots['IR_DSP_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        # plt.close()
-        
-        # # Plot 8: IR SBIRS vs Range
-        # plt.figure(figsize=(10, 6))
-        # plt.plot(results['range'], results['IR_SBIRS'], 'cyan', linewidth=2)
-        # plt.xlabel('Range (km)', fontsize=12)
-        # plt.ylabel('IR Intensity (W/m²)', fontsize=12)
-        # plt.title('SBIRS IR Intensity vs Range', fontsize=14, fontweight='bold')
-        # plt.grid(True, alpha=0.3)
-        # plt.tight_layout()
-        
-        # img_buffer = io.BytesIO()
-        # plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-        # img_buffer.seek(0)
-        # plots['IR_SBIRS_vs_range'] = base64.b64encode(img_buffer.getvalue()).decode()
-        # plt.close()
+        print("Test PNG files saved - check for borders:")
+        print("- altitude_vs_range_test.png (red borders)")
+        print("- velocity_vs_range_test.png (blue borders)")
+        print("- time_vs_range_test.png (green borders)")
+        print("- crossrange_vs_range_test.png (purple borders)")
         
     except Exception as e:
         print(f"Error generating plots: {e}")

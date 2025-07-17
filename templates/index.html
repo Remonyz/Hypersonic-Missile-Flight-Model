@@ -167,7 +167,13 @@
         }
 
         #resetBtn {
-            background: linear-gradient(45deg, #b2fe4f, #26fe00);
+            background: linear-gradient(45deg, #dc3545, #f89ea7);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        #runSimulationBtn {
+            background: linear-gradient(45deg, #3578dc, #8cd3f6);
             color: white;
             box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
         }
@@ -275,6 +281,7 @@
             border-radius: 12px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(102, 126, 234, 0.1);
+            overflow: visible;
         }
 
         .plot-container h3 {
@@ -342,6 +349,10 @@
             border-radius: 12px;
             margin: 20px 0;
             box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .hidden-input {
+            display: none;
         }
 
         #error-message {
@@ -438,12 +449,12 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #2f2f30, #8e8e8e);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(45deg, #764ba2, #667eea);
+            background: linear-gradient(45deg, #2b2b2b, #69696a);
         }
         /* Map section styling */
         #map-section {
@@ -799,51 +810,49 @@
         
         <!-- Input Parameters Form -->
         <div class="input-section">
-            <h2>Vehicle Parameters</h2>
             <form id="simulationForm">
                 <!-- Initial Conditions -->
                 <div class="parameter-group">
-                    <h3>Initial Conditions</h3>
+                    <h3>Initial Flight Conditions</h3>
                     <div class="input-row">
-                        <label for="v0">Initial Velocity (km/s):</label>
+                        <label for="v0">Initial velocity (km/s):</label>
                         <input type="number" id="v0" name="v0" value="3.5" step="0.1" min="1" max="15">
                     </div>
                     <div class="input-row">
-                        <label for="gammad0">Initial Flight Path Angle (deg):</label>
+                        <label for="gammad0">Initial pitch angle (deg):</label>
                         <input type="number" id="gammad0" name="gammad0" value="0" step="0.1" min="-45" max="45">
                     </div>
                     <div class="input-row">
-                        <label for="rolld0">Initial Roll Angle (deg):</label>
+                        <label for="rolld0">Initial roll angle (deg):</label>
                         <input type="number" id="rolld0" name="rolld0" value="0" step="1" min="-90" max="90">
                     </div>
                     <div class="input-row">
-                        <label for="kappad0">Initial Heading Angle (deg):</label>
+                        <label for="kappad0">Initial heading angle (deg):</label>
                         <input type="number" id="kappad0" name="kappad0" value="0" step="1" min="-180" max="180">
                     </div>
-                    <div class="input-row">
-                        <label for="r0">Initial Range (km):</label>
+                    <div class="hidden-input">
+                        <label for="r0">Initial range (km):</label>
                         <input type="number" id="r0" name="r0" value="0" step="1" min="0" max="1000" readonly>
                     </div>
-                    <div class="input-row">
-                        <label for="cr0">Initial Crossrange (km):</label>
+                    <div class="hidden-input">
+                        <label for="cr0">Initial crossrange (km):</label>
                         <input type="number" id="cr0" name="cr0" value="0" step="1" min="-1000" max="1000" readonly>
                     </div>
-                    <div class="input-row">
-                        <label for="t0">Initial Time (s):</label>
+                    <div class="hidden-input">
+                        <label for="t0">Initial time (s):</label>
                         <input type="number" id="t0" name="t0" value="0" step="1" min="0" max="1000" readonly>
                     </div>
                     
                     <!-- Advanced Settings Toggle -->
                     <div class="input-row">
                         <button type="button" id="advancedSettingsBtn" class="advanced-settings-btn">
-                            <span id="advancedSettingsText">Show Advanced Settings</span>
+                            <span id="advancedSettingsText">Add Complex Maneuvers</span>
                             <span id="advancedSettingsIcon">▼</span>
                         </button>
                     </div>
                     
                     <!-- Advanced Settings Panel -->
                     <div id="advancedSettingsPanel" class="advanced-settings-panel" style="display: none;">
-                        <h4>Roll Angle Time Changes</h4>
                         <div class="roll-changes-info">
                             <p>Define specific times when the roll angle should change during flight:</p>
                         </div>
@@ -862,15 +871,15 @@
                 <div class="parameter-group">
                     <h3>Vehicle Properties</h3>
                     <div class="input-row">
-                        <label for="payload">Payload Mass (kg):</label>
+                        <label for="payload">Vehicle mass (kg):</label>
                         <input type="number" id="payload" name="payload" value="1000" step="10" min="100" max="10000">
                     </div>
                     <div class="input-row">
-                        <label for="beta">Ballistic Coefficient (kg/m²):</label>
+                        <label for="beta">Ballistic coefficient (kg/m²):</label>
                         <input type="number" id="beta" name="beta" value="4680" step="10" min="100" max="2000">
                     </div>
                     <div class="input-row">
-                        <label for="LtoD">Lift-to-Drag Ratio:</label>
+                        <label for="LtoD">Lift-to-drag ratio:</label>
                         <input type="number" id="LtoD" name="LtoD" value="2.6" step="0.1" min="0.5" max="10">
                     </div>
                     <!-- <div class="input-row">
@@ -912,6 +921,10 @@
                         <input type="number" id="lam4" name="lam4" value="4.8" step="0.1" min="1" max="20">
                     </div>
                 </div> -->
+                <!-- Loading indicator -->
+                <div id="loading" style="display: none;">
+                    <p>Running simulation... Please wait.</p>
+                </div>
 
                 <!-- Buttons -->
                 <div class="button-group">
@@ -921,10 +934,7 @@
             </form>
         </div>
 
-        <!-- Loading indicator -->
-        <div id="loading" style="display: none;">
-            <p>Running simulation... Please wait.</p>
-        </div>
+  
 
         <!-- Results Section -->
         <div id="results-section" style="display: none;">
@@ -938,22 +948,22 @@
 
             <div id="plots-grid">
                 <div class="plot-container">
-                    <h3>Altitude vs Range</h3>
+                    
                     <div id="plot-altitude-range" style="width: 100%; height: 400px;"></div>
                 </div>
                 
                 <div class="plot-container">
-                    <h3>Velocity vs Range</h3>
+                    
                     <div id="plot-velocity-range" style="width: 100%; height: 400px;"></div>
                 </div>
                 
                 <div class="plot-container">
-                    <h3>Flight Time vs Range</h3>
+                    
                     <div id="plot-time-range" style="width: 100%; height: 400px;"></div>
                 </div>
                 
                 <div class="plot-container">
-                    <h3>Cross Range vs Range</h3>
+                    
                     <div id="plot-crossrange-range" style="width: 100%; height: 400px;"></div>
                 </div>
                 
@@ -980,10 +990,10 @@
 
             <!-- Footprint Results Section -->
             <div id="footprint-section" style="display: none;">
-                <h2>Footprint Analysis Results</h2>
+                <h2>Footprint Analysis</h2>
                 
                 <div id="footprint-stats">
-                    <h3>Footprint Statistics</h3>
+                    <!-- <h3>Footprint Statistics</h3> -->
                     <div id="footprint-stats-content"></div>
                 </div>
 
@@ -995,6 +1005,10 @@
 
             <div id="map-section" style="display: none;">
                 <h2>Footprint Map Projection</h2>
+
+                <div class="trajectory-map-info">
+                    <p>This map shows the range of the missle.</p>
+                </div>
                 
                 <div class="map-controls">
                     <div class="control-group">
@@ -1094,8 +1108,8 @@
                         <thead>
                             <tr>
                                 <th>Time (s)</th>
-                                <th>Altitude (km)</th>
                                 <th>Velocity (km/s)</th>
+                                <th>Altitude (km)</th>
                                 <th>Range (km)</th>
                                 <th>Crossrange (km)</th>
                                 <!-- <th>Boundary Layer</th> -->
@@ -1178,11 +1192,11 @@
             
             if (panel.style.display === 'none') {
                 panel.style.display = 'block';
-                text.textContent = 'Hide Advanced Settings';
+                text.textContent = 'Hide Complex Maneuvers';
                 icon.textContent = '▲';
             } else {
                 panel.style.display = 'none';
-                text.textContent = 'Show Advanced Settings';
+                text.textContent = 'Add Complex Maneuvers';
                 icon.textContent = '▼';
             }
         }
@@ -1289,7 +1303,7 @@
             // Hide advanced settings
             const panel = document.getElementById('advancedSettingsPanel');
             panel.style.display = 'none';
-            document.getElementById('advancedSettingsText').textContent = 'Show Advanced Settings';
+            document.getElementById('advancedSettingsText').textContent = 'Add Complex Maneuvers';
             document.getElementById('advancedSettingsIcon').textContent = '▼';
             
             // Hide trajectory map
@@ -1560,19 +1574,19 @@
             statsContainer.innerHTML = `
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <strong>Final Range:</strong> ${finalRange.toFixed(2)} km
+                        <strong>Final range:</strong> ${finalRange.toFixed(2)} km
                     </div>
                     <div class="stat-item">
-                        <strong>Final Crossrange:</strong> ${finalCrossrange.toFixed(2)} km
+                        <strong>Final crossrange:</strong> ${finalCrossrange.toFixed(2)} km
                     </div>
                     <div class="stat-item">
-                        <strong>Flight Time:</strong> ${flightTime.toFixed(1)} s
+                        <strong>Flight time:</strong> ${flightTime.toFixed(1)} s
                     </div>
                     <div class="stat-item">
-                        <strong>Max Altitude:</strong> ${maxAltitude.toFixed(2)} km
+                        <strong>Max altitude:</strong> ${maxAltitude.toFixed(2)} km
                     </div>
                     <div class="stat-item">
-                        <strong>Max Velocity:</strong> ${maxVelocity.toFixed(2)} km/s
+                        <strong>Max velocity:</strong> ${maxVelocity.toFixed(2)} km/s
                     </div>
                 </div>
             `;
@@ -1591,6 +1605,11 @@
             
             createInteractivePlot('plot-crossrange-range', currentResults.range, currentResults.crossrange, 
                                 'Range (km)', 'Crossrange (km)', 'Cross Range vs Range');
+            
+            // Add this line to trigger a resize after plots are created
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
         }
 
         // Create interactive plot with crosshairs and tooltips
@@ -1603,6 +1622,14 @@
                 line: { color: '#1f77b4', width: 2 },
                 hovertemplate: `<b>${xTitle}:</b> %{x:.3f}<br><b>${yTitle}:</b> %{y:.3f}<extra></extra>`
             };
+
+            // Calculate the data ranges
+            const xRange = Math.abs(Math.max(...xData) - Math.min(...xData));
+            const yRange = Math.abs(Math.max(...yData) - Math.min(...yData));
+            
+            // Add padding to the ranges (10% on each side = 20% total)
+            const xPadding = xRange * 0.2;
+            const yPadding = yRange * 0.2;
 
             const layout = {
                 title: {
@@ -1617,7 +1644,16 @@
                     spikecolor: '#999',
                     spikethickness: 1,
                     spikedash: 'dot',
-                    spikemode: 'across'
+                    spikemode: 'across',
+                    showline: true,
+                    linewidth: 2,
+                    linecolor: 'black',
+                    mirror: true,
+                    // Set the range with padding
+                    range: [
+                        Math.min(...xData) - xPadding,
+                        Math.max(...xData) + xPadding
+                    ]
                 },
                 yaxis: {
                     title: yTitle,
@@ -1627,7 +1663,16 @@
                     spikecolor: '#999',
                     spikethickness: 1,
                     spikedash: 'dot',
-                    spikemode: 'across'
+                    spikemode: 'across',
+                    showline: true,
+                    linewidth: 2,
+                    linecolor: 'black',
+                    mirror: true,
+                    // Set the range with padding
+                    range: [
+                        Math.min(...yData) - yPadding,
+                        Math.max(...yData) + yPadding
+                    ]
                 },
                 hovermode: 'closest',
                 showlegend: false,
@@ -1678,9 +1723,6 @@
                 <div class="stats-grid">
                     <div class="stat-item">
                         <strong>Footprint Area:</strong> ${data.footprint_area.toLocaleString()} km²
-                    </div>
-                    <div class="stat-item">
-                        <strong>Trajectories Calculated:</strong> ${data.trajectories_count}
                     </div>
                 </div>
             `;
@@ -2419,7 +2461,7 @@
                         weight: 2
                     }).addTo(trajectoryMap);
                     
-                    marker.bindTooltip(`Planned: ${point.time}s<br>Actual: ${point.actualTime.toFixed(1)}s<br>Roll: ${point.angle}°`);
+                    marker.bindTooltip(`Time: ${point.actualTime.toFixed(1)}s<br>Roll: ${point.angle}°`);
                     trajectoryLayers.push(marker);
                 });
                 
