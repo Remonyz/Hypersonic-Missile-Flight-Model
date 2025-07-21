@@ -243,14 +243,17 @@
         /* Statistics styling */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
             gap: 15px;
             margin-bottom: 25px;
+            max-width: 1200px; 
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .stat-item {
             background: linear-gradient(145deg, #f8f9fa, #e9ecef);
-            padding: 15px 20px;
+            padding: 12px 15px;
             border-radius: 10px;
             border-left: 4px solid #667eea;
             transition: transform 0.2s ease;
@@ -802,6 +805,24 @@
             font-size: 16px;
             color: #666;
         }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 14px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -815,19 +836,19 @@
                 <div class="parameter-group">
                     <h3>Initial Flight Conditions</h3>
                     <div class="input-row">
-                        <label for="v0">Initial velocity (km/s):</label>
+                        <label for="v0">Velocity (km/s):</label>
                         <input type="number" id="v0" name="v0" value="3.5" step="0.1" min="1" max="15">
                     </div>
                     <div class="input-row">
-                        <label for="gammad0">Initial pitch angle (deg):</label>
+                        <label for="gammad0">Pitch angle (deg):</label>
                         <input type="number" id="gammad0" name="gammad0" value="0" step="0.1" min="-45" max="45">
                     </div>
                     <div class="input-row">
-                        <label for="rolld0">Initial roll angle (deg):</label>
+                        <label for="rolld0">Roll angle (deg):</label>
                         <input type="number" id="rolld0" name="rolld0" value="0" step="1" min="-90" max="90">
                     </div>
                     <div class="input-row">
-                        <label for="kappad0">Initial heading angle (deg):</label>
+                        <label for="kappad0">Heading angle (deg):</label>
                         <input type="number" id="kappad0" name="kappad0" value="0" step="1" min="-180" max="180">
                     </div>
                     <div class="hidden-input">
@@ -843,28 +864,7 @@
                         <input type="number" id="t0" name="t0" value="0" step="1" min="0" max="1000" readonly>
                     </div>
                     
-                    <!-- Advanced Settings Toggle -->
-                    <div class="input-row">
-                        <button type="button" id="advancedSettingsBtn" class="advanced-settings-btn">
-                            <span id="advancedSettingsText">Add Complex Maneuvers</span>
-                            <span id="advancedSettingsIcon">▼</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Advanced Settings Panel -->
-                    <div id="advancedSettingsPanel" class="advanced-settings-panel" style="display: none;">
-                        <div class="roll-changes-info">
-                            <p>Define specific times when the roll angle should change during flight:</p>
-                        </div>
-                        
-                        <div id="rollChangesContainer">
-                            <!-- Roll angle changes will be added here dynamically -->
-                        </div>
-                        
-                        <button type="button" id="addRollChangeBtn" class="add-roll-change-btn">
-                            + Add Roll Change
-                        </button>
-                    </div>
+                   
                 </div>
 
                 <!-- Vehicle Properties -->
@@ -886,6 +886,39 @@
                         <label for="emis">Surface Emissivity:</label>
                         <input type="number" id="emis" name="emis" value="0.85" step="0.01" min="0.1" max="1.0">
                     </div> -->
+                </div>
+
+                <div class="parameter-group">
+                    <h3>Advanced Options</h3>
+                    <div class="input-row">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="calculateFootprint" name="calculateFootprint" checked>
+                            <label for="calculateFootprint">Calculate threatened footprint</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Settings Toggle -->
+                    <div class="input-row">
+                        <button type="button" id="advancedSettingsBtn" class="advanced-settings-btn">
+                            <span id="advancedSettingsText">Add Complex Maneuvers</span>
+                            <span id="advancedSettingsIcon">▼</span>
+                        </button>
+                    </div>
+                        
+                    <!-- Advanced Settings Panel -->
+                    <div id="advancedSettingsPanel" class="advanced-settings-panel" style="display: none;">
+                        <div class="roll-changes-info">
+                            <p>Define specific times when the roll angle should change during flight:</p>
+                        </div>
+                            
+                        <div id="rollChangesContainer">
+                            <!-- Roll angle changes will be added here dynamically -->
+                        </div>
+                            
+                        <button type="button" id="addRollChangeBtn" class="add-roll-change-btn">
+                            + Add Roll Change
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Thermal Analysis Parameters -->
@@ -1398,11 +1431,18 @@
             hideLoading();
         }
 
+        document.getElementById('calculateFootprint').addEventListener('change', function(e) {
+            const footprintEnabled = e.target.checked;
+            // Store the setting so it can be used during simulation
+            window.calculateFootprint = footprintEnabled;
+        });
+
         async function runCompleteSimulation() {
             showLoading();
             
             try {
                 const params = getFormData();
+                const calculateFootprint = document.getElementById('calculateFootprint').checked;
                 
                 // Step 1: Run main simulation
                 console.log('Running main simulation...');
@@ -1429,45 +1469,52 @@
                 displayResults(simData.results, simData.plots);
                 document.getElementById('results-section').style.display = 'block';
                 
-                // Step 2: Calculate footprint
-                console.log('Calculating footprint...');
-                const footprintResponse = await fetch('/footprint', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(params)
-                });
-                const footprintData = await footprintResponse.json();
-                
-                if (!footprintData.success) {
-                    showError(footprintData.error || 'Footprint calculation failed');
-                    return;
-                }
-                
-                currentFootprintData = footprintData.footprint_data;
-                displayFootprintResults(footprintData);
-                document.getElementById('footprint-section').style.display = 'block';
-                
-                // Step 3: Initialize map and project footprint
-                console.log('Initializing map and projecting footprint...');
-                document.getElementById('map-section').style.display = 'block';
-                
-                if (!map) {
-                    // Initialize map first, then project footprint
-                    setTimeout(async () => {
-                        initializeMap();
-                        // Set initial start location
-                        const startLat = parseFloat(document.getElementById('start-latitude').value);
-                        const startLng = parseFloat(document.getElementById('start-longitude').value);
-                        setStartLocation(startLat, startLng);
-                        
-                        // Auto-project footprint
+                // Step 2: Calculate footprint (only if checkbox is checked)
+                if (calculateFootprint) {
+                    console.log('Calculating footprint...');
+                    const footprintResponse = await fetch('/footprint', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(params)
+                    });
+                    const footprintData = await footprintResponse.json();
+                    
+                    if (!footprintData.success) {
+                        showError(footprintData.error || 'Footprint calculation failed');
+                        return;
+                    }
+                    
+                    currentFootprintData = footprintData.footprint_data;
+                    displayFootprintResults(footprintData);
+                    document.getElementById('footprint-section').style.display = 'block';
+                    
+                    // Step 3: Initialize map and project footprint
+                    console.log('Initializing map and projecting footprint...');
+                    document.getElementById('map-section').style.display = 'block';
+                    
+                    if (!map) {
+                        // Initialize map first, then project footprint
+                        setTimeout(async () => {
+                            initializeMap();
+                            // Set initial start location
+                            const startLat = parseFloat(document.getElementById('start-latitude').value);
+                            const startLng = parseFloat(document.getElementById('start-longitude').value);
+                            setStartLocation(startLat, startLng);
+                            
+                            // Auto-project footprint
+                            await projectFootprintOnMap();
+                        }, 100);
+                    } else {
+                        // Map already exists, just project footprint
                         await projectFootprintOnMap();
-                    }, 100);
+                    }
                 } else {
-                    // Map already exists, just project footprint
-                    await projectFootprintOnMap();
+                    // Hide footprint-related sections if not calculating
+                    document.getElementById('footprint-section').style.display = 'none';
+                    document.getElementById('map-section').style.display = 'none';
+                    console.log('Footprint calculation skipped (checkbox unchecked)');
                 }
 
                 // Step 4: Show trajectory map if roll changes exist
@@ -1613,7 +1660,7 @@
         }
 
         // Create interactive plot with crosshairs and tooltips
-        function createInteractivePlot(containerId, xData, yData, xTitle, yTitle, plotTitle) {
+        function createInteractivePlot(containerId, xData, yData, xTitle, yTitle, plotTitle, minYRange = null) {
             const trace = {
                 x: xData,
                 y: yData,
@@ -1630,6 +1677,23 @@
             // Reduce padding by half (5% instead of 10%)
             const xPadding = xRange * 0.1;
             const yPadding = yRange * 0.1;
+
+            // Calculate y-axis range with minimum scale option
+            let yAxisRange;
+            if (minYRange && yRange < minYRange) {
+                // If the data range is smaller than the minimum, use the minimum range
+                const yCenter = (Math.max(...yData) + Math.min(...yData)) / 2;
+                yAxisRange = [
+                    Math.max(0, yCenter - minYRange / 2),
+                    yCenter + minYRange / 2
+                ];
+            } else {
+                // Use the standard range calculation
+                yAxisRange = [
+                    0,
+                    Math.max(...yData) + yPadding
+                ];
+            }
 
             const layout = {
                 title: {
@@ -1668,11 +1732,8 @@
                     linewidth: 2,
                     linecolor: 'black',
                     mirror: true,
-                    // Origin at bottom-left: start from 0, add padding only to the top
-                    range: [
-                        0,
-                        Math.max(...yData) + yPadding
-                    ]
+                    // Use the calculated y-axis range
+                    range: yAxisRange
                 },
                 hovermode: 'closest',
                 showlegend: false,
@@ -1779,21 +1840,27 @@
 
         // Initialize the map
         function initializeMap() {
-            if (map) {
-                map.remove();
-            }
-            
-            map = L.map('map').setView([37.7749, -122.4194], 8);
-            
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
+            map = L.map('map', {
+                center: [0, 0],
+                zoom: 2,
+                dragging: true,
+                doubleClickZoom: true
+            });
+
+            // Add English-only tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
+                attribution: '©OpenStreetMap, ©CartoDB',
+                language: 'en' // Force English labels
             }).addTo(map);
-            
-            // Add click handler for setting start location
-            map.on('click', function(e) {
-                setStartLocation(e.latlng.lat, e.latlng.lng);
+
+            // Clear any existing layers when creating new ones
+            map.on('dragend', function() {
+                if (trajectoryDirectionArrow) {
+                    map.removeLayer(trajectoryDirectionArrow);
+                    if (trajectoryDirectionArrow.arrowHead) {
+                        map.removeLayer(trajectoryDirectionArrow.arrowHead);
+                    }
+                }
             });
         }
 
@@ -1806,6 +1873,14 @@
             // Remove existing marker
             if (startMarker) {
                 map.removeLayer(startMarker);
+            }
+
+            if (directionArrow) {
+                map.removeLayer(directionArrow);
+                if (directionArrow.arrowHead) {
+                    map.removeLayer(directionArrow.arrowHead);
+                }
+                directionArrow = null;
             }
             
             // Add new marker
@@ -1925,6 +2000,14 @@
                 // Clear existing footprint layers
                 footprintLayers.forEach(layer => map.removeLayer(layer));
                 footprintLayers = [];
+
+                if (directionArrow) {
+                    map.removeLayer(directionArrow);
+                    if (directionArrow.arrowHead) {
+                        map.removeLayer(directionArrow.arrowHead);
+                    }
+                    directionArrow = null;
+                }
                 
                 // Check the structure of currentFootprintData
                 console.log('Checking currentFootprintData.curves:', currentFootprintData.curves);
@@ -2192,8 +2275,9 @@
             
             trajectoryMap = L.map('trajectory-map').setView([37.7749, -122.4194], 8);
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap contributors',
+                language: 'en',
                 maxZoom: 18
             }).addTo(trajectoryMap);
             
@@ -2209,6 +2293,14 @@
             
             if (trajectoryStartMarker) {
                 trajectoryMap.removeLayer(trajectoryStartMarker);
+            }
+
+            if (trajectoryDirectionArrow) {
+                trajectoryMap.removeLayer(trajectoryDirectionArrow);
+                if (trajectoryDirectionArrow.arrowHead) {
+                    trajectoryMap.removeLayer(trajectoryDirectionArrow.arrowHead);
+                }
+                trajectoryDirectionArrow = null;
             }
             
             trajectoryStartMarker = L.marker([lat, lng], {
@@ -2247,6 +2339,10 @@
             
             if (trajectoryDirectionArrow) {
                 trajectoryMap.removeLayer(trajectoryDirectionArrow);
+                if (trajectoryDirectionArrow.arrowHead) {
+                    trajectoryMap.removeLayer(trajectoryDirectionArrow.arrowHead);
+                }
+                trajectoryDirectionArrow = null;
             }
             
             trajectoryDirectionArrow = L.polyline([
@@ -2323,6 +2419,14 @@
                         }
                     });
                     trajectoryLayers = [];
+                }
+
+                if (trajectoryDirectionArrow) {
+                    trajectoryMap.removeLayer(trajectoryDirectionArrow);
+                    if (trajectoryDirectionArrow.arrowHead) {
+                        trajectoryMap.removeLayer(trajectoryDirectionArrow.arrowHead);
+                    }
+                    trajectoryDirectionArrow = null;
                 }
                 
                 // **FIX: Re-run simulation with roll changes to get updated trajectory**
