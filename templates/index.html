@@ -840,13 +840,14 @@
                         <input type="number" id="v0" name="v0" value="3.5" step="0.1" min="1" max="15">
                     </div>
                     <div class="input-row">
-                        <label for="gammad0">Pitch angle (deg):</label>
-                        <input type="number" id="gammad0" name="gammad0" value="0" step="0.1" min="-45" max="45">
-                    </div>
-                    <div class="input-row">
                         <label for="rolld0">Roll angle (deg):</label>
                         <input type="number" id="rolld0" name="rolld0" value="0" step="1" min="-90" max="90">
                     </div>
+                    <div class="input-row">
+                        <label for="gammad0">Pitch angle (deg):</label>
+                        <input type="number" id="gammad0" name="gammad0" value="0" step="0.1" min="-45" max="45">
+                    </div>
+                    
                     <div class="input-row">
                         <label for="kappad0">Heading angle (deg):</label>
                         <input type="number" id="kappad0" name="kappad0" value="0" step="1" min="-180" max="180">
@@ -870,7 +871,7 @@
                 <!-- Vehicle Properties -->
                 <div class="parameter-group">
                     <h3>Vehicle Properties</h3>
-                    <div class="input-row">
+                    <div class="hidden-input">
                         <label for="payload">Vehicle mass (kg):</label>
                         <input type="number" id="payload" name="payload" value="1000" step="10" min="100" max="10000">
                     </div>
@@ -1169,16 +1170,16 @@
     <script>
         // Default parameters
         const defaultParams = {
-            v0: 7.5,
+            v0: 3.5,
             rolld0: 0,
-            gammad0: -2.0,
+            gammad0: 0,
             kappad0: 0,
             r0: 0,
             cr0: 0,
             t0: 0,
             payload: 1000,
-            beta: 500,
-            LtoD: 3.0
+            beta: 4680,
+            LtoD: 2.6
         };
 
         // Global variables to store results
@@ -1517,22 +1518,20 @@
                     console.log('Footprint calculation skipped (checkbox unchecked)');
                 }
 
-                // Step 4: Show trajectory map if roll changes exist
-                if (rollChanges.length > 0) {
-                    console.log('Roll changes detected, showing trajectory map...');
-                    document.getElementById('trajectory-map-section').style.display = 'block';
-                    
-                    if (!trajectoryMap) {
-                        setTimeout(async () => {
-                            initializeTrajectoryMap();
-                            const startLat = parseFloat(document.getElementById('trajectory-start-latitude').value);
-                            const startLng = parseFloat(document.getElementById('trajectory-start-longitude').value);
-                            setTrajectoryStartLocation(startLat, startLng);
-                            await projectTrajectoryOnMap();
-                        }, 100);
-                    } else {
+                // Step 4: Show trajectory map 
+                console.log('Showing trajectory map...');
+                document.getElementById('trajectory-map-section').style.display = 'block';
+
+                if (!trajectoryMap) {
+                    setTimeout(async () => {
+                        initializeTrajectoryMap();
+                        const startLat = parseFloat(document.getElementById('trajectory-start-latitude').value);
+                        const startLng = parseFloat(document.getElementById('trajectory-start-longitude').value);
+                        setTrajectoryStartLocation(startLat, startLng);
                         await projectTrajectoryOnMap();
-                    }
+                    }, 100);
+                } else {
+                    await projectTrajectoryOnMap();
                 }
                 
                 console.log('Complete simulation finished successfully');
@@ -2373,10 +2372,12 @@
                 return;
             }
             
-            if (rollChanges.length === 0) {
-                alert('No roll angle changes defined. Add roll changes in Advanced Settings.');
-                return;
-            }
+            // if (rollChanges.length === 0) {
+            //     alert('No roll angle changes defined. Add roll changes in Advanced Settings.');
+            //     return;
+            // }
+
+            console.log('Proceeding to project trajectory on map without roll changes');
             
             console.log('Roll changes being applied:', rollChanges);
             
