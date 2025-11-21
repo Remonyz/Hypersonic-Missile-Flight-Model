@@ -560,7 +560,7 @@ class HypersonicGlideSimulator:
             cosa = (np.sin(psi))**2 + np.cos(2*omega) * (np.cos(psi))**2
             cosa = np.clip(cosa, -1.0, 1.0)
             crange_earth = 0.5 * self.Rearth * np.arccos(cosa)
-            if roll < 0:
+            if omega < 0:
                 crange_earth = crange_earth * -1
             
             sine = np.cos(omega) * np.cos(psi) / ((1+cosa)/2)**0.5
