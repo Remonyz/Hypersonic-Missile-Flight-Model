@@ -2496,9 +2496,10 @@
                     if (Math.abs(crossrange) < 0.001) {
                         trajectoryPoints.push([flightPathPoint.lat, flightPathPoint.lng]);
                     } else {
+                        // **FIXED: Swap the bearing logic so positive crossrange goes RIGHT**
                         const perpBearing = crossrange > 0 ? 
-                            (flightDirection + 90) % 360 : 
-                            (flightDirection - 90 + 360) % 360;
+                            (flightDirection - 90 + 360) % 360 :  // Positive crossrange = RIGHT (subtract 90°)
+                            (flightDirection + 90) % 360;          // Negative crossrange = LEFT (add 90°)
                         
                         const projectedPoint = calculateDestination(
                             flightPathPoint.lat, flightPathPoint.lng, 
